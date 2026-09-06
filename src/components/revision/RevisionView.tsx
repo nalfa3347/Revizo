@@ -231,7 +231,16 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
     });
 
     try {
-      const result = await aiOrchestrator.processCourseDocument(file, profile!.id, (p) => {
+      const userId = profile?.id;
+      if (!userId) {
+        setPipelineProgress({
+          stage: 'error',
+          message: 'Veuillez vous connecter pour importer et enregistrer un cours.',
+          percent: 0
+        });
+        return;
+      }
+      const result = await aiOrchestrator.processCourseDocument(file, userId, (p) => {
         setPipelineProgress(p);
       });
       setPipelineResult(result);
