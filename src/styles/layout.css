@@ -1,0 +1,383 @@
+/* ==========================================================================
+   REVIZO — LAYOUT & NAVIGATION CONFORME AUX RÉFÉRENCES
+   Sidebar Desktop blanche avec logo REVIZO✦ & Bottom bar mobile 4 onglets
+   ========================================================================== */
+
+/* Structure globale */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  position: relative;
+}
+
+/* Sidebar Desktop fixe */
+.desktop-sidebar {
+  display: none;
+}
+
+/* Zone principale */
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 20px));
+}
+
+/* Top Header */
+.app-header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+  background-color: var(--bg-app);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.brand-title-text {
+  font-family: var(--font-family-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.brand-sparkle {
+  color: #F59E0B;
+  font-size: 14px;
+  margin-left: 2px;
+  vertical-align: super;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.header-icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  background: transparent;
+  position: relative;
+  transition: background-color var(--transition-fast);
+}
+
+.header-icon-btn:hover {
+  background-color: var(--bg-surface-subtle);
+}
+
+.notification-count-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background-color: var(--accent-orange);
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--bg-app);
+}
+
+.header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color var(--transition-fast);
+}
+
+.header-avatar:hover {
+  border-color: var(--accent-orange);
+}
+
+.header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Page Container */
+.page-container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--space-4) var(--space-8);
+}
+
+/* Mobile Bottom Navigation — 4 onglets */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #FFFFFF;
+  border-top: 1px solid var(--border-light);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  z-index: 50;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  position: relative;
+  transition: color var(--transition-fast);
+  gap: 3px;
+}
+
+.mobile-nav-item.active {
+  color: var(--accent-orange);
+  font-weight: 700;
+}
+
+.mobile-nav-item.active svg {
+  color: var(--accent-orange);
+  stroke: var(--accent-orange);
+}
+
+.mobile-active-indicator {
+  position: absolute;
+  bottom: 6px;
+  width: 32px;
+  height: 3px;
+  background-color: var(--accent-orange);
+  border-radius: var(--radius-full);
+}
+
+/* ==========================================================================
+   DESKTOP (>= 860px)
+   ========================================================================== */
+@media (min-width: 860px) {
+  .desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: var(--sidebar-width);
+    height: 100vh;
+    height: 100dvh;
+    position: sticky;
+    top: 0;
+    background-color: #FFFFFF;
+    border-right: 1px solid var(--border-light);
+    padding: var(--space-6) var(--space-4);
+    z-index: 30;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-8);
+    padding-left: var(--space-2);
+  }
+
+  .sidebar-logo-text {
+    font-family: var(--font-family-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    flex: 1;
+  }
+
+  .sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: var(--text-sm);
+    transition: all var(--transition-fast);
+  }
+
+  .sidebar-nav-item:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-surface-subtle);
+  }
+
+  /* Onglet actif sur Desktop : pilule pêche/orange */
+  .sidebar-nav-item.active {
+    color: var(--accent-orange);
+    background-color: var(--accent-orange-subtle);
+    font-weight: 700;
+  }
+
+  .sidebar-nav-item.active svg {
+    color: var(--accent-orange);
+    stroke: var(--accent-orange);
+  }
+
+  .sidebar-footer {
+    border-top: 1px solid var(--border-light);
+    padding-top: var(--space-4);
+  }
+
+  .sidebar-profile-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-2);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+  }
+
+  .sidebar-profile-card:hover {
+    background-color: var(--bg-surface-subtle);
+  }
+
+  .sidebar-profile-card.active {
+    background-color: var(--bg-nav-active);
+    color: var(--accent-orange);
+  }
+
+  .sidebar-profile-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .sidebar-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .sidebar-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sidebar-profile-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .sidebar-name {
+    font-weight: 700;
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+  }
+
+  .sidebar-level {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  /* Desktop Header : cache la marque et l'avatar de header (qui sont dans la sidebar) */
+  .app-header .header-brand {
+    display: none;
+  }
+
+  .app-header .header-avatar {
+    display: none;
+  }
+
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+  .app-main {
+    padding-bottom: var(--space-8);
+  }
+
+  .page-container {
+    padding: var(--space-4) var(--space-8) var(--space-8);
+  }
+
+  .desktop-only-block {
+    display: flex !important;
+  }
+
+  .mobile-only-block,
+  .mobile-only-grid {
+    display: none !important;
+  }
+
+  .home-top-grid {
+    grid-template-columns: 1.6fr 1fr !important;
+    align-items: stretch;
+  }
+
+  .subjects-container {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: var(--space-4) !important;
+  }
+}
+
+/* Base mobile visibility rules (< 860px) */
+.desktop-only-block {
+  display: none !important;
+}
+
+.mobile-only-block {
+  display: flex !important;
+}
+
+.mobile-only-grid {
+  display: grid !important;
+}
+
+.home-top-grid {
+  grid-template-columns: 1fr;
+}
+
+.subjects-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+

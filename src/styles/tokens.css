@@ -1,0 +1,111 @@
+/* ==========================================================================
+   REVIZO — DESIGN SYSTEM TOKENS (RÉFÉRENCE VISUELLE OFFICIELLE)
+   Palette chaleureuse, lumineuse, moderne, contrastée et ultra-lisible
+   ========================================================================== */
+
+:root {
+  /* Fond de l'application & surfaces */
+  --bg-app: #F8F9FA;
+  --bg-surface: #FFFFFF;
+  --bg-surface-subtle: #F3F4F6;
+  --bg-surface-hover: #F9FAFB;
+  
+  /* Hero card sombre (Objectif du jour) */
+  --bg-hero-dark: #1E2022;
+  --bg-hero-dark-elevated: #2A2D31;
+  --bg-hero-segment-empty: #32363C;
+  --bg-hero-segment-filled: #F29E4C;
+  
+  /* Couleurs de marque & accents */
+  --accent-orange: #EA580C;
+  --accent-orange-hover: #C2410C;
+  --accent-orange-subtle: #FFF3E8;
+  --accent-orange-border: #FFD8BA;
+
+  --accent-amber: #F59E0B;
+  --accent-amber-light: #FEF3C7;
+  --accent-amber-btn: #F0A558;
+  --accent-amber-btn-hover: #E89542;
+
+  /* Couleurs de matières scolaires */
+  --subject-math: #EA580C;
+  --subject-math-bg: #FFF3E8;
+  --subject-math-badge: #FFEDD5;
+  --subject-math-text: #C2410C;
+
+  --subject-french: #10B981;
+  --subject-french-bg: #ECFDF5;
+  --subject-french-badge: #D1FAE5;
+  --subject-french-text: #047857;
+
+  --subject-science: #7C3AED;
+  --subject-science-bg: #F5F3FF;
+  --subject-science-badge: #EDE9FE;
+  --subject-science-text: #6D28D9;
+
+  /* Gamification */
+  --stat-diamond-color: #F59E0B;
+  --stat-diamond-bg: #FFFBEB;
+  --stat-streak-color: #EA580C;
+  --stat-streak-bg: #FFF7ED;
+  --stat-level-color: #1E2022;
+  --stat-level-bg: #F3F4F6;
+
+  /* Typographie & Couleurs de texte */
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --text-white: #FFFFFF;
+  --text-orange: #EA580C;
+
+  /* Bordures */
+  --border-light: #ECEEF2;
+  --border-subtle: #E5E7EB;
+  --border-focus: #EA580C;
+
+  /* Typographie */
+  --font-family-display: 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 1.875rem;  /* 30px */
+
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+
+  /* Espacements */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  /* Rayons de courbure */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Ombres douces & discrètes */
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.06);
+
+  /* Layout */
+  --sidebar-width: 250px;
+  --header-height: 64px;
+  --bottom-nav-height: 68px;
+  --transition-fast: 150ms ease-out;
+}
