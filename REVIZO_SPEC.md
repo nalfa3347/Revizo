@@ -423,3 +423,13 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
   - Ajout de la configuration `vercel.json` avec règles de réécriture SPA (`/(.*) -> /index.html`) et mise en cache des assets statiques.
   - Création du script sécurisé `scripts/sync-vercel-env.mjs` (`npm run sync:vercel`) permettant d'injecter automatiquement toutes les variables d'environnement (`VITE_DATA_PROVIDER`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`) vers Vercel (Production, Preview, Development) par flux `stdin` sans jamais afficher les clés en clair.
   - Rédaction du guide exhaustif `VERCEL_DEPLOY.md` détaillant le déploiement continu, l'étanchéité des secrets et la portabilité inter-machines (permettant la suppression locale du projet sans perte de données ni interruption de service).
+- [x] **PHASE PURGE INTÉGRALE DES DONNÉES FICTIVES (VRAIES DONNÉES SUPABASE EXCLUSIVES)** (Terminée et Validée le 2026-09-06)
+  - Suppression radicale de toutes les données factices hardcodées dans l'application UI :
+    - `HomeView` : suppression du prénom "Nasser", des scores figés (Maths 78%, Français 64%, Sciences 42%), des niveaux/diamants hardcodés. Intégration de la lecture dynamique des matières et cours réels de l'élève depuis Supabase avec états vides accueillants.
+    - `RevisionView` : suppression définitive de `recentCoursesList` (les 3 faux cours "Les équations du second degré", "Le commentaire composé", "La mitose cellulaire") et de la carte factice "Continuer ma dernière révision". Branchement direct sur `courseService.getAllCourses()` pour n'afficher que les vrais cours persistés dans Supabase.
+    - `AppShell` : suppression du prénom "Nasser" en sidebar et header mobile, suppression du niveau `8` hardcodé au profit du niveau réel issu de `user_progress`, et remplacement des photos de stock Unsplash par des badges d'initiales élégants et personnalisés.
+    - `SettingsView` : affichage des statistiques réelles (nom, classe, nombre de cours réels, niveau, série, diamants) dans la modale "Gestion de mes données".
+    - `ProfileView` : suppression des valeurs de repli factices dans le formulaire d'édition.
+    - `AuthView` : masquage des indices de compte démo en mode réel Supabase.
+    - `SupabaseDataProvider` : calcul dynamique en temps réel des moyennes de maîtrise par matière à partir de la table PostgreSQL `concepts`, et retour de valeurs neutres (0%, niveau 1) en cas d'absence de données au lieu de faux chiffres.
+  - 100% de réussite aux tests automatisés (16 fichiers, 88 tests validés) et compilation de production Vite sans erreur.

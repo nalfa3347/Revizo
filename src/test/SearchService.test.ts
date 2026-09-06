@@ -69,7 +69,7 @@ describe('SearchService', () => {
   it('fournit des suggestions rapides cohérentes avec REVIZO', () => {
     const suggestions = searchService.getQuickSuggestions();
     expect(suggestions.length).toBeGreaterThan(0);
-    expect(suggestions).toContain('Second degré');
     expect(suggestions).toContain('Mathématiques');
+    expect(suggestions).toContain('Français');
   });
 });

@@ -190,14 +190,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="card-white profile-identity-card">
           <div className="profile-identity-main">
             <div className="profile-avatar-wrapper">
-              <img
-                src={
-                  profile.avatarUrl ||
-                  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
-                }
-                alt={profile.displayName}
-                className="profile-avatar-img"
-              />
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.displayName}
+                  className="profile-avatar-img"
+                />
+              ) : (
+                <div
+                  className="profile-avatar-img"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'linear-gradient(135deg, #EA580C, #F97316)',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '26px',
+                    borderRadius: '50%'
+                  }}
+                >
+                  {(profile.displayName || 'E').charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="profile-avatar-badge" title={`Niveau ${progress.level}`}>
                 {progress.level}
               </div>
@@ -498,7 +513,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   className="form-input"
                   value={editDisplayName}
                   onChange={e => setEditDisplayName(e.target.value)}
-                  placeholder="Ex : Nasser"
+                  placeholder="Ex : Thomas, Sarah..."
                   required
                 />
               </div>
@@ -532,7 +547,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   id="edit-email"
                   type="email"
                   className="form-input"
-                  value={profile?.email || 'nasser@revizo.app'}
+                  value={profile?.email || ''}
                   disabled
                 />
                 <span className="form-helper-text">

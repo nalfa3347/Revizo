@@ -31,12 +31,12 @@ export class SearchService {
    */
   getQuickSuggestions(): string[] {
     return [
-      'Second degré',
       'Mathématiques',
-      'Pythagore',
-      'Commentaire composé',
+      'Français',
       'Sciences',
-      'Quiz'
+      'Histoire-Géo',
+      'Quiz',
+      'Révision'
     ];
   }
 }

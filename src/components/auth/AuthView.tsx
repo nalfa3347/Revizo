@@ -15,6 +15,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getActiveProviderType } from '../../providers/providerFactory';
 import { SchoolLevel } from '../../types';
 
 interface AuthViewProps {
@@ -23,6 +24,7 @@ interface AuthViewProps {
 
 export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
   const { signIn, signUp, completeAuth, checkIdentifier } = useAuth();
+  const isMockMode = getActiveProviderType() === 'mock';
 
   // Mode principal : 'login' | 'signup' | 'onboarding'
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'onboarding'>('login');
@@ -298,18 +300,20 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                       }}
                       placeholder={
                         loginMethod === 'email'
-                          ? 'ex : nasser@revizo.app'
+                          ? (isMockMode ? 'ex : nasser@revizo.app' : 'ex : eleve@exemple.fr')
                           : 'ex : 06 12 34 56 78'
                       }
                       className="auth-input"
                       autoFocus
                     />
                   </div>
-                  <span className="auth-field-hint">
-                    {loginMethod === 'email'
-                      ? 'Compte démo : nasser@revizo.app'
-                      : 'Compte démo : 0612345678'}
-                  </span>
+                  {isMockMode && (
+                    <span className="auth-field-hint">
+                      {loginMethod === 'email'
+                        ? 'Compte démo local : nasser@revizo.app'
+                        : 'Compte démo local : 0612345678'}
+                    </span>
+                  )}
                 </div>
 
                 {/* COMPTE INCONNU -> PROPOSITION ÉLÉGANTE DE CRÉATION */}

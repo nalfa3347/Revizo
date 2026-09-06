@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Target,
@@ -7,10 +7,12 @@ import {
   Calculator,
   BookOpen,
   FlaskConical,
+  GraduationCap,
   ArrowRight
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Target3DIllustration } from '../common/Target3DIllustration';
+import { Subject, CourseConcept } from '../../types';
 
 interface HomeViewProps {
   onNavigateToCourses: () => void;
@@ -18,36 +20,84 @@ interface HomeViewProps {
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStartRevision }) => {
-  const { profile, progress } = useData();
+  const { profile, progress, courseService, dataProvider } = useData();
 
-  // Données de progression (valeurs par défaut fidèles aux captures)
-  const currentStreak = progress?.currentStreak ?? 12;
-  const diamonds = progress?.diamondsBalance ?? 24;
-  const level = progress?.level ?? 8;
-  const xpToNext = progress?.xpToNextLevel ?? 260;
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [coursesCount, setCoursesCount] = useState<number>(0);
+  const [weakConcepts, setWeakConcepts] = useState<CourseConcept[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchHomeData = async () => {
+      try {
+        const [subList, crsList, weaks] = await Promise.all([
+          courseService.getSubjects(),
+          courseService.getAllCourses(),
+          dataProvider.getWeakConcepts()
+        ]);
+        if (mounted) {
+          setSubjects(subList);
+          setCoursesCount(crsList.length);
+          setWeakConcepts(weaks);
+        }
+      } catch (err) {
+        console.error('Erreur de chargement des données réelles d’accueil :', err);
+      }
+    };
+
+    fetchHomeData();
+    return () => {
+      mounted = false;
+    };
+  }, [courseService, dataProvider]);
+
+  // Données de progression réelles du profil Supabase
+  const currentStreak = progress?.currentStreak ?? 1;
+  const diamonds = progress?.diamondsBalance ?? 10;
+  const level = progress?.level ?? 1;
+  const xpToNext = progress?.xpToNextLevel ?? 100;
   const dailyGoalMinutes = progress?.dailyGoalMinutes ?? 15;
-  const dailyProgressPct = 70; // 7 segments sur 10
+  const dailyProgressMinutes = progress?.dailyGoalProgressMinutes ?? 0;
+  const dailyProgressPct = Math.min(
+    100,
+    Math.max(0, Math.round((dailyProgressMinutes / (dailyGoalMinutes || 1)) * 100))
+  );
+  const remainingMinutes = Math.max(0, dailyGoalMinutes - dailyProgressMinutes);
 
-  // 10 segments pour la barre de progression
-  const segments = Array.from({ length: 10 }, (_, i) => i < 7);
+  // 10 segments pour la barre de progression (calculé d'après les minutes réelles)
+  const segments = Array.from({ length: 10 }, (_, i) => i < Math.round(dailyProgressPct / 10));
 
-  // Jours de la semaine
-  const days = [
-    { label: 'L', completed: true },
-    { label: 'M', completed: true },
-    { label: 'M', completed: true },
-    { label: 'J', completed: true },
-    { label: 'V', completed: true },
-    { label: 'S', completed: true },
-    { label: 'D', completed: false }
-  ];
+  // Jours de la semaine d'après l'activité réelle enregistrée
+  const dayLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+  const weeklyDaysArray = progress?.weeklyDays || [false, false, false, false, false, false, false];
+  const days = dayLabels.map((label, idx) => ({
+    label,
+    completed: Boolean(weeklyDaysArray[idx])
+  }));
+
+  // Icône dynamique par matière
+  const getSubjectIcon = (iconName?: string, name?: string) => {
+    const n = (name || '').toLowerCase();
+    if (n.includes('math') || iconName === 'Calculator') return <Calculator size={22} />;
+    if (n.includes('fran') || iconName === 'BookOpen') return <BookOpen size={22} />;
+    if (n.includes('sci') || n.includes('svt') || iconName === 'FlaskConical') return <FlaskConical size={22} />;
+    return <GraduationCap size={22} />;
+  };
+
+  // Titre du défi quotidien dynamique
+  const challengeTitle =
+    weakConcepts.length > 0
+      ? `Consolide la notion « ${weakConcepts[0].name} » pour booster ta maîtrise.`
+      : coursesCount > 0
+      ? 'Effectue ta session de révision quotidienne pour maintenir ta série active.'
+      : 'Ajoute ton premier cours pour commencer tes révisions et débloquer les quiz.';
 
   return (
     <div className="home-view">
       {/* 1. Titre & Message d'accueil */}
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-primary)', marginBottom: '4px' }}>
-          Bonjour, <strong>{profile?.displayName || 'Nasser'}</strong> 👋
+          Bonjour, <strong>{profile?.displayName || 'Élève'}</strong> 👋
         </p>
         <h1 style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
           Prêt pour ta révision ?
@@ -69,7 +119,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStart
               <span className="hero-title-suffix">de révision</span>
             </div>
 
-            {/* Barre segmentée (10 segments) */}
+            {/* Barre segmentée (10 segments réels) */}
             <div className="segmented-progress-row">
               <div className="segmented-progress-bar">
                 {segments.map((filled, idx) => (
@@ -83,7 +133,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStart
             </div>
 
             <p className="hero-subtitle">
-              Encore 5 minutes pour atteindre ton objectif !
+              {remainingMinutes > 0
+                ? `Encore ${remainingMinutes} minutes pour atteindre ton objectif !`
+                : 'Objectif quotidien atteint ! Félicitations 🎉'}
             </p>
           </div>
 
@@ -142,7 +194,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStart
               <div className="stat-value-large">Niveau {level}</div>
               <div className="stat-label-muted">{xpToNext} XP avant le niveau {level + 1}</div>
               <div className="level-progress-bar">
-                <div className="level-progress-fill" style={{ width: '65%' }} />
+                <div
+                  className="level-progress-fill"
+                  style={{
+                    width: `${Math.min(100, Math.max(5, 100 - (xpToNext / ((level * 150) || 100)) * 100))}%`
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -182,7 +239,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStart
         </div>
       </div>
 
-      {/* 3. Section "Mes matières" */}
+      {/* 3. Section "Mes matières" (Entièrement dynamique) */}
       <div style={{ marginBottom: 'var(--space-8)' }}>
         <div className="section-header">
           <h2 className="section-title">Mes matières</h2>
@@ -192,68 +249,78 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStart
           </button>
         </div>
 
-        {/* Grille Desktop / Liste Mobile */}
-        <div className="subjects-container">
-          {/* Matière 1 : Mathématiques */}
-          <div className="card-white card-white-interactive subject-card" onClick={onNavigateToCourses}>
-            <div className="subject-icon-box" style={{ backgroundColor: 'var(--subject-math-bg)', color: 'var(--subject-math)' }}>
-              <Calculator size={22} />
-            </div>
-            <div className="subject-content">
-              <div className="subject-title">Mathématiques</div>
-              <div className="subject-mastery" style={{ color: 'var(--subject-math-text)' }}>
-                78 % <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>maîtrisé</span>
-              </div>
-              <div className="subject-progress-track">
-                <div className="subject-progress-fill" style={{ width: '78%', backgroundColor: 'var(--subject-math)' }} />
-              </div>
-            </div>
-            <div className="subject-level-pill" style={{ backgroundColor: 'var(--subject-math-badge)', color: 'var(--subject-math-text)' }}>
-              ★ Niveau 6
-            </div>
+        {coursesCount === 0 ? (
+          /* État vide si l'élève n'a pas encore de cours dans Supabase */
+          <div
+            className="card-white"
+            style={{
+              textAlign: 'center',
+              padding: 'var(--space-8) var(--space-4)',
+              border: '1px dashed var(--border-color)',
+              backgroundColor: 'var(--surface)'
+            }}
+          >
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)', fontSize: '0.95rem' }}>
+              Tu n’as pas encore de cours importé. Ajoute ton premier cours pour commencer tes révisions personnalisées.
+            </p>
+            <button
+              className="btn btn-primary"
+              onClick={onNavigateToCourses}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <span>Ajouter un cours</span>
+              <ArrowRight size={16} />
+            </button>
           </div>
-
-          {/* Matière 2 : Français */}
-          <div className="card-white card-white-interactive subject-card" onClick={onNavigateToCourses}>
-            <div className="subject-icon-box" style={{ backgroundColor: 'var(--subject-french-bg)', color: 'var(--subject-french)' }}>
-              <BookOpen size={22} />
-            </div>
-            <div className="subject-content">
-              <div className="subject-title">Français</div>
-              <div className="subject-mastery" style={{ color: 'var(--subject-french-text)' }}>
-                64 % <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>maîtrisé</span>
-              </div>
-              <div className="subject-progress-track">
-                <div className="subject-progress-fill" style={{ width: '64%', backgroundColor: 'var(--subject-french)' }} />
-              </div>
-            </div>
-            <div className="subject-level-pill" style={{ backgroundColor: 'var(--subject-french-badge)', color: 'var(--subject-french-text)' }}>
-              Niveau 5
-            </div>
+        ) : (
+          /* Grille des matières réelles de l'élève */
+          <div className="subjects-container">
+            {subjects.map(subj => {
+              const mastery = Math.max(0, Math.min(100, subj.masteryScore ?? 0));
+              return (
+                <div
+                  key={subj.id}
+                  className="card-white card-white-interactive subject-card"
+                  onClick={onNavigateToCourses}
+                >
+                  <div
+                    className="subject-icon-box"
+                    style={{
+                      backgroundColor: `${subj.color}18`,
+                      color: subj.color
+                    }}
+                  >
+                    {getSubjectIcon(subj.icon, subj.name)}
+                  </div>
+                  <div className="subject-content">
+                    <div className="subject-title">{subj.name}</div>
+                    <div className="subject-mastery" style={{ color: subj.color }}>
+                      {mastery} % <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>maîtrisé</span>
+                    </div>
+                    <div className="subject-progress-track">
+                      <div
+                        className="subject-progress-fill"
+                        style={{ width: `${mastery}%`, backgroundColor: subj.color }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="subject-level-pill"
+                    style={{
+                      backgroundColor: `${subj.color}15`,
+                      color: subj.color
+                    }}
+                  >
+                    Niveau {subj.level}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          {/* Matière 3 : Sciences */}
-          <div className="card-white card-white-interactive subject-card" onClick={onNavigateToCourses}>
-            <div className="subject-icon-box" style={{ backgroundColor: 'var(--subject-science-bg)', color: 'var(--subject-science)' }}>
-              <FlaskConical size={22} />
-            </div>
-            <div className="subject-content">
-              <div className="subject-title">Sciences</div>
-              <div className="subject-mastery" style={{ color: 'var(--subject-science-text)' }}>
-                42 % <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>maîtrisé</span>
-              </div>
-              <div className="subject-progress-track">
-                <div className="subject-progress-fill" style={{ width: '42%', backgroundColor: 'var(--subject-science)' }} />
-              </div>
-            </div>
-            <div className="subject-level-pill" style={{ backgroundColor: 'var(--subject-science-badge)', color: 'var(--subject-science-text)' }}>
-              ⬡ Niveau 3
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* 4. Groupe Pinned / Fixe "Relever les défis" (attaché directement au body pour un fixed 100% viewport) */}
+      {/* 4. Groupe Pinned / Fixe "Relever les défis" */}
       {createPortal(
         <div className="pinned-challenge-container">
           <div className="pinned-challenge-box">
@@ -268,7 +335,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStart
                   <span className="pinned-challenge-xp">+50 XP</span>
                 </div>
                 <p className="pinned-challenge-title">
-                  Réponds correctement à 10 questions de mathématiques.
+                  {challengeTitle}
                 </p>
               </div>
             </div>

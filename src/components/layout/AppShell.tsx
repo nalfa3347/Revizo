@@ -37,8 +37,9 @@ export const AppShell: React.FC<AppShellProps> = ({
   onBackFromSearch,
   onBackFromNotifications
 }) => {
-  const { profile, notifications, unreadNotificationsCount } = useData();
+  const { profile, progress, notifications, unreadNotificationsCount } = useData();
   const unreadCount = unreadNotificationsCount !== undefined ? unreadNotificationsCount : notifications.filter(n => !n.read).length;
+  const userInitial = (profile?.displayName || 'Élève').charAt(0).toUpperCase();
 
   return (
     <div className="app-shell">
@@ -96,14 +97,30 @@ export const AppShell: React.FC<AppShellProps> = ({
           >
             <div className="sidebar-profile-left">
               <div className="sidebar-avatar">
-                <img
-                  src={profile?.avatarUrl || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'}
-                  alt={profile?.displayName || 'Nasser'}
-                />
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt={profile.displayName} />
+                ) : (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #EA580C, #F97316)',
+                      color: '#FFFFFF',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      borderRadius: '50%'
+                    }}
+                  >
+                    {userInitial}
+                  </div>
+                )}
               </div>
               <div className="sidebar-profile-info">
-                <span className="sidebar-name">{profile?.displayName || 'Nasser'}</span>
-                <span className="sidebar-level">Niveau {profile ? 8 : 8}</span>
+                <span className="sidebar-name">{profile?.displayName || 'Élève'}</span>
+                <span className="sidebar-level">Niveau {progress?.level ?? 1}</span>
               </div>
             </div>
             <ChevronRight size={16} color="var(--text-muted)" />
@@ -233,10 +250,26 @@ export const AppShell: React.FC<AppShellProps> = ({
               title="Profil"
               id="header-profile-avatar"
             >
-              <img
-                src={profile?.avatarUrl || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'}
-                alt={profile?.displayName || 'Nasser'}
-              />
+              {profile?.avatarUrl ? (
+                <img src={profile.avatarUrl} alt={profile.displayName} />
+              ) : (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'linear-gradient(135deg, #EA580C, #F97316)',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    borderRadius: '50%'
+                  }}
+                >
+                  {userInitial}
+                </div>
+              )}
             </div>
           </div>
         </header>

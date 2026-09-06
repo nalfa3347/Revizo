@@ -39,7 +39,7 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
   registerBackHandler,
   initialCourse
 }) => {
-  const { revisionService, network, aiOrchestrator, profile } = useData();
+  const { revisionService, courseService, network, aiOrchestrator, profile } = useData();
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeRevision, setActiveRevision] = useState<Revision | null>(null);
@@ -52,6 +52,7 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null);
   const [importingFileName, setImportingFileName] = useState<string | null>(null);
   const [importedCourses, setImportedCourses] = useState<Course[]>([]);
+  const [realCourses, setRealCourses] = useState<Course[]>([]);
   const [activeQuizToPlay, setActiveQuizToPlay] = useState<{ course: Course; quiz: Quiz } | null>(null);
 
   const fileInputPdfRef = useRef<HTMLInputElement>(null);
@@ -70,6 +71,24 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
   }, [registerBackHandler]);
 
   useEffect(() => {
+    let mounted = true;
+    const fetchCourses = async () => {
+      try {
+        const crs = await courseService.getAllCourses();
+        if (mounted) {
+          setRealCourses(crs);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des cours :', err);
+      }
+    };
+    fetchCourses();
+    return () => {
+      mounted = false;
+    };
+  }, [courseService, pipelineResult]);
+
+  useEffect(() => {
     if (initialCourse) {
       handleOpenCourse(initialCourse.id, initialCourse.title, initialCourse.subjectName);
     } else {
@@ -79,56 +98,37 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
     }
   }, [initialCourse]);
 
-  // Les 3 cours récents de la référence officielle
-  const recentCoursesList = [
-    {
-      id: 'crs-math-02',
-      subjectName: 'Mathématiques',
-      title: 'Les équations du second degré',
-      progress: 65,
-      color: '#C47D2B',
-      bgColor: '#FDF2E7',
-      icon: Calculator
-    },
-    {
-      id: 'crs-fr-01',
-      subjectName: 'Français',
-      title: 'Le commentaire composé',
-      progress: 40,
-      color: '#10B981',
-      bgColor: '#ECFDF5',
-      icon: BookOpen
-    },
-    {
-      id: 'crs-sci-01',
-      subjectName: 'Sciences',
-      title: 'La reproduction humaine',
-      progress: 25,
-      color: '#8B5CF6',
-      bgColor: '#F5F3FF',
-      icon: FlaskConical
-    }
+  const getCourseStyle = (subjectName: string) => {
+    const s = (subjectName || '').toLowerCase();
+    if (s.includes('math')) return { color: '#C47D2B', bgColor: '#FDF2E7', icon: Calculator };
+    if (s.includes('fran')) return { color: '#10B981', bgColor: '#ECFDF5', icon: BookOpen };
+    if (s.includes('sci') || s.includes('svt')) return { color: '#8B5CF6', bgColor: '#F5F3FF', icon: FlaskConical };
+    return { color: '#EA580C', bgColor: '#FFF3E8', icon: FileText };
+  };
+
+  // Fusionner les cours enregistrés avec les cours nouvellement importés lors de la session
+  const combinedCourses = [
+    ...importedCourses,
+    ...realCourses.filter(rc => !importedCourses.some(ic => ic.id === rc.id))
   ];
 
-  // Combinaison des cours importés dynamiquement avec la liste initiale
-  const allRecentCourses = [
-    ...importedCourses.map(c => ({
+  const allRecentCourses = combinedCourses.map(c => {
+    const style = getCourseStyle(c.subjectName);
+    return {
       id: c.id,
       subjectName: c.subjectName,
       title: c.title,
       progress: c.progressPercentage || 0,
-      color: c.subjectName === 'Mathématiques' ? '#C47D2B' : c.subjectName === 'Français' ? '#10B981' : '#8B5CF6',
-      bgColor: c.subjectName === 'Mathématiques' ? '#FDF2E7' : c.subjectName === 'Français' ? '#ECFDF5' : '#F5F3FF',
-      icon: c.subjectName === 'Mathématiques' ? Calculator : c.subjectName === 'Français' ? BookOpen : FlaskConical
-    })),
-    ...recentCoursesList
-  ];
+      color: style.color,
+      bgColor: style.bgColor,
+      icon: style.icon
+    };
+  });
 
   // Gestion de l'ouverture d'un cours pour lire sa fiche détaillée
   const handleOpenCourse = async (courseId: string, courseTitle: string, subjectName: string) => {
     let rev = await revisionService.getRevisionForCourse(courseId);
     if (!rev) {
-      // Fallback avec données de synthèse pour le cours
       rev = {
         id: `rev-${courseId}`,
         courseId,
@@ -146,19 +146,9 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
               'Identifier les étapes clés de la méthode.',
               'Savoir appliquer la démarche dans les exercices types.'
             ]
-          },
-          {
-            id: 'sec-2',
-            order: 2,
-            title: '2. Méthodologie & Pièges à Éviter',
-            content: 'Conseils pratiques et erreurs fréquentes rencontrées lors des évaluations.',
-            keyTakeaways: [
-              'Toujours vérifier la cohérence des résultats.',
-              'Bien rédiger les justifications intermédiaires.'
-            ]
           }
         ],
-        totalSections: 2,
+        totalSections: 1,
         keyConcepts: [courseTitle],
         rulesFormulas: [],
         isDownloaded: false,
@@ -570,73 +560,96 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
           </button>
         </div>
 
-        {/* Boîte listant les cours */}
-        <div className="recent-courses-box">
-          {allRecentCourses.map(c => {
-            const IconComponent = c.icon;
-            return (
-              <div
-                key={c.id}
-                className="recent-course-item"
-                onClick={() => handleOpenCourse(c.id, c.title, c.subjectName)}
-                role="button"
-                tabIndex={0}
-              >
-                {/* Icône matière */}
-                <div className="recent-course-icon" style={{ backgroundColor: c.bgColor, color: c.color }}>
-                  <IconComponent size={22} />
-                </div>
-
-                {/* Nom matière & Titre cours */}
-                <div className="recent-course-info">
-                  <div className="recent-course-subject">{c.subjectName}</div>
-                  <div className="recent-course-title">{c.title}</div>
-                </div>
-
-                {/* Barre de progression & Pourcentage */}
-                <div className="recent-course-progress-side">
-                  <div className="recent-progress-bar">
-                    <div
-                      className="recent-progress-fill"
-                      style={{ width: `${c.progress}%`, backgroundColor: c.color }}
-                    />
+        {/* Boîte listant les cours réels ou état vide */}
+        {allRecentCourses.length === 0 ? (
+          <div
+            className="recent-courses-box"
+            style={{
+              padding: 'var(--space-6)',
+              textAlign: 'center',
+              backgroundColor: 'var(--surface)',
+              border: '1px dashed var(--border-color)',
+              borderRadius: 'var(--radius-xl)'
+            }}
+          >
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 'var(--space-2)' }}>
+              Aucun cours récent pour le moment.
+            </p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              Importe un PDF ou prends une photo ci-dessus pour créer ta première fiche de révision.
+            </p>
+          </div>
+        ) : (
+          <div className="recent-courses-box">
+            {allRecentCourses.map(c => {
+              const IconComponent = c.icon;
+              return (
+                <div
+                  key={c.id}
+                  className="recent-course-item"
+                  onClick={() => handleOpenCourse(c.id, c.title, c.subjectName)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  {/* Icône matière */}
+                  <div className="recent-course-icon" style={{ backgroundColor: c.bgColor, color: c.color }}>
+                    <IconComponent size={22} />
                   </div>
-                  <span className="recent-progress-pct" style={{ color: c.color }}>
-                    {c.progress} %
-                  </span>
-                  <ChevronRight size={16} color="#9CA3AF" />
+
+                  {/* Nom matière & Titre cours */}
+                  <div className="recent-course-info">
+                    <div className="recent-course-subject">{c.subjectName}</div>
+                    <div className="recent-course-title">{c.title}</div>
+                  </div>
+
+                  {/* Barre de progression & Pourcentage */}
+                  <div className="recent-course-progress-side">
+                    <div className="recent-progress-bar">
+                      <div
+                        className="recent-progress-fill"
+                        style={{ width: `${c.progress}%`, backgroundColor: c.color }}
+                      />
+                    </div>
+                    <span className="recent-progress-pct" style={{ color: c.color }}>
+                      {c.progress} %
+                    </span>
+                    <ChevronRight size={16} color="#9CA3AF" />
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 4. CARTE : "CONTINUER MA DERNIÈRE RÉVISION" (Affichée uniquement si un cours existe) */}
+      {allRecentCourses.length > 0 && (() => {
+        const lastCourse = allRecentCourses[0];
+        return (
+          <div className="continue-last-card">
+            <div className="continue-last-left">
+              <div className="continue-medal-box">
+                <MedalAwardIcon size={34} color={lastCourse.color} />
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* 4. CARTE : "CONTINUER MA DERNIÈRE RÉVISION" */}
-      <div className="continue-last-card">
-        <div className="continue-last-left">
-          {/* Trophée / Médaille */}
-          <div className="continue-medal-box">
-            <MedalAwardIcon size={34} color="#C47D2B" />
+              <div className="continue-last-texts">
+                <div className="continue-badge-text">Dernier cours ajouté</div>
+                <div className="continue-subject-title">{lastCourse.subjectName}</div>
+                <div className="continue-course-title">{lastCourse.title}</div>
+                <div className="continue-step-text">Prêt pour la révision</div>
+              </div>
+            </div>
+
+            <button
+              className="btn-continue-gold"
+              onClick={() => handleOpenCourse(lastCourse.id, lastCourse.title, lastCourse.subjectName)}
+            >
+              <span>CONTINUER</span>
+              <ArrowRight size={14} strokeWidth={2.5} />
+            </button>
           </div>
-
-          <div className="continue-last-texts">
-            <div className="continue-badge-text">Continuer ma dernière révision</div>
-            <div className="continue-subject-title">Mathématiques</div>
-            <div className="continue-course-title">Les équations du second degré</div>
-            <div className="continue-step-text">Question 7 sur 15</div>
-          </div>
-        </div>
-
-        {/* Bouton CONTINUER → */}
-        <button
-          className="btn-continue-gold"
-          onClick={() => handleOpenCourse('crs-math-02', 'Les équations du second degré', 'Mathématiques')}
-        >
-          <span>CONTINUER</span>
-          <ArrowRight size={14} strokeWidth={2.5} />
-        </button>
-      </div>
+        );
+      })()}
 
       {/* Modal de progression de l'import et écran "Ton cours est prêt !" */}
       <ImportProcessingModal

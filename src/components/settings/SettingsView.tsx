@@ -35,6 +35,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     settings,
     updateSettings,
     userService,
+    profile,
+    progress,
+    courseService,
     isLoading: contextLoading
   } = useData();
 
@@ -42,8 +45,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isDataModalOpen, setIsDataModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [coursesCount, setCoursesCount] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    courseService.getAllCourses().then(c => setCoursesCount(c.length)).catch(() => {});
+  }, [courseService]);
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -507,15 +515,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
               <div className="data-stat-row">
                 <span>Profil & Niveau scolaire</span>
-                <strong>Nasser (Classe de 3e)</strong>
+                <strong>{profile?.displayName || 'Élève'} (Classe de {profile?.gradeLevel || '3e'})</strong>
               </div>
               <div className="data-stat-row">
                 <span>Cours & documents importés</span>
-                <strong>4 cours actifs</strong>
+                <strong>{coursesCount} cours enregistré{coursesCount > 1 ? 's' : ''}</strong>
               </div>
               <div className="data-stat-row">
                 <span>Progression & Gamification</span>
-                <strong>Niveau 8 • 12 jours de série • 24 💎</strong>
+                <strong>Niveau {progress?.level ?? 1} • {progress?.currentStreak ?? 1} jour{progress?.currentStreak && progress.currentStreak > 1 ? 's' : ''} de série • {progress?.diamondsBalance ?? 10} 💎</strong>
               </div>
               <div className="data-stat-row">
                 <span>Fiches de révision locales</span>

@@ -42,13 +42,6 @@ export class SupabaseDataProvider implements IDataProvider {
   private activeSessions: Map<string, QuizSession> = new Map();
   private jobs: Map<string, ProcessingJob> = new Map();
 
-  // Matières de référence
-  private subjects: Subject[] = [
-    { id: 'sbj-math', name: 'Mathématiques', color: '#EA580C', icon: 'Calculator', masteryScore: 78, level: 6 },
-    { id: 'sbj-fr', name: 'Français', color: '#10B981', icon: 'BookOpen', masteryScore: 64, level: 5 },
-    { id: 'sbj-sci', name: 'Sciences', color: '#8B5CF6', icon: 'FlaskConical', masteryScore: 42, level: 3 }
-  ];
-
   constructor(private client: SupabaseClient<Database>, initialUser?: UserProfile) {
     this.userRepo = new UserRepository(client);
     this.courseRepo = new CourseRepository(client);
@@ -78,14 +71,19 @@ export class SupabaseDataProvider implements IDataProvider {
 
     const profile = await this.userRepo.getById(this.currentUserId);
     if (!profile) {
-      // Profil par défaut sécurisé
-      return {
-        id: this.currentUserId || 'usr-default',
-        email: 'eleve@revizo.app',
-        displayName: 'Élève REVIZO',
-        gradeLevel: '3e',
-        joinedAt: new Date().toISOString()
+      const { data: { user } } = await this.client.auth.getUser();
+      const userEmail = user?.email || '';
+      const userDisplayName = (user?.user_metadata?.display_name as string) || (userEmail ? userEmail.split('@')[0] : 'Élève');
+      const userGrade = (user?.user_metadata?.grade_level as any) || '3e';
+      const newProfile: UserProfile = {
+        id: this.currentUserId || user?.id || 'usr-default',
+        email: userEmail,
+        displayName: userDisplayName,
+        gradeLevel: userGrade,
+        joinedAt: user?.created_at || new Date().toISOString()
       };
+      await this.userRepo.upsert(newProfile).catch(() => {});
+      return newProfile;
     }
     return profile;
   }
@@ -97,20 +95,25 @@ export class SupabaseDataProvider implements IDataProvider {
   async getProgress(): Promise<UserProgress> {
     const prog = await this.progressRepo.getByUserId(this.currentUserId);
     if (!prog) {
-      return {
+      // Progression initiale conforme au trigger handle_new_user() (10 diamants, 3 énergies, 0 XP, série 1)
+      const initialProgress: UserProgress = {
         userId: this.currentUserId,
-        totalXp: 1200,
-        level: 5,
-        xpToNextLevel: 300,
-        currentStreak: 7,
-        longestStreak: 10,
-        diamondsBalance: 20,
+        totalXp: 0,
+        level: 1,
+        xpToNextLevel: 100,
+        currentStreak: 1,
+        longestStreak: 1,
+        diamondsBalance: 10,
         energyBalance: 3,
         dailyGoalMinutes: 15,
-        dailyGoalProgressMinutes: 10,
+        dailyGoalProgressMinutes: 0,
         lastActivityDate: new Date().toISOString().split('T')[0],
-        weeklyDays: [true, true, true, true, true, false, false]
+        weeklyDays: [false, false, false, false, false, false, false]
       };
+      if (this.currentUserId) {
+        await this.progressRepo.upsert(initialProgress).catch(() => {});
+      }
+      return initialProgress;
     }
     return prog;
   }
@@ -145,7 +148,66 @@ export class SupabaseDataProvider implements IDataProvider {
   // 3. MATIÈRES & COURS
   // ----------------------------------------------------
   async getSubjects(): Promise<Subject[]> {
-    return [...this.subjects];
+    const courses = await this.courseRepo.listByUserId(this.currentUserId);
+    if (courses.length === 0) {
+      // Aucune matière importée : scores neutres initiaux à 0%
+      return [
+        { id: 'sbj-math', name: 'Mathématiques', color: '#EA580C', icon: 'Calculator', masteryScore: 0, level: 1 },
+        { id: 'sbj-fr', name: 'Français', color: '#10B981', icon: 'BookOpen', masteryScore: 0, level: 1 },
+        { id: 'sbj-sci', name: 'Sciences', color: '#8B5CF6', icon: 'FlaskConical', masteryScore: 0, level: 1 }
+      ];
+    }
+
+    // Agréger les matières réelles selon les cours importés par l'élève
+    const subjectMap = new Map<string, { id: string; name: string; courseIds: string[] }>();
+    for (const c of courses) {
+      const subName = c.subjectName || 'Général';
+      const subId = c.subjectId || `sbj-${subName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+      if (!subjectMap.has(subName)) {
+        subjectMap.set(subName, { id: subId, name: subName, courseIds: [] });
+      }
+      subjectMap.get(subName)!.courseIds.push(c.id);
+    }
+
+    // Récupérer les concepts réels pour calculer le taux de maîtrise exact
+    const { data: allConcepts } = await this.client
+      .from('concepts')
+      .select('*')
+      .eq('user_id', this.currentUserId);
+
+    const conceptRows = (allConcepts as SupabaseConceptRow[]) || [];
+
+    const result: Subject[] = [];
+    for (const [subName, info] of subjectMap.entries()) {
+      const courseIdSet = new Set(info.courseIds);
+      const subConcepts = conceptRows.filter(c => courseIdSet.has(c.course_id));
+
+      let avgMastery = 0;
+      if (subConcepts.length > 0) {
+        const totalMastery = subConcepts.reduce((acc, c) => acc + (c.mastery_score || 0), 0);
+        avgMastery = Math.round(totalMastery / subConcepts.length);
+      }
+
+      const isMath = subName.toLowerCase().includes('math');
+      const isFr = subName.toLowerCase().includes('fran');
+      const isSci = subName.toLowerCase().includes('sci') || subName.toLowerCase().includes('svt');
+      const isHist = subName.toLowerCase().includes('hist') || subName.toLowerCase().includes('géo');
+
+      const color = isMath ? '#EA580C' : isFr ? '#10B981' : isSci ? '#8B5CF6' : isHist ? '#D97706' : '#6366F1';
+      const icon = isMath ? 'Calculator' : isFr ? 'BookOpen' : isSci ? 'FlaskConical' : 'BookOpen';
+      const level = Math.max(1, Math.min(10, Math.floor(avgMastery / 12) + 1));
+
+      result.push({
+        id: info.id,
+        name: subName,
+        color,
+        icon,
+        masteryScore: avgMastery,
+        level
+      });
+    }
+
+    return result;
   }
 
   async getCourses(subjectId?: string): Promise<Course[]> {
