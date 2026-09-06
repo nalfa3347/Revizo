@@ -416,5 +416,10 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - Épreuve de sécurité RLS : Élève Bêta ne voit aucun cours d'Élève Alpha, ne peut pas lire ses révisions par ID direct, et ne peut pas altérer sa progression.
     - Reconnexion multi-sessions avec préservation intégrale des données de chaque élève.
   - Suite de 77 tests automatisés au vert (13 fichiers de tests, 100% de réussite).
-  - Build de production `tsc -b && vite build` validé sans erreur.
-
+- [x] **PHASE DÉPLOIEMENT GITHUB & CONFIGURATION VERCEL MULTI-MACHINES** (Terminée et Validée le 2026-09-06)
+  - Initialisation et synchronisation propre du dépôt distant `https://github.com/nalfa3347/Revizo` sur la branche `main`.
+  - Intégralité des 116 fichiers sources, tests et configurations poussés en production.
+  - Zéro fuite de secret : `.env.local` est strictement exclu via `.gitignore`, seul `.env.example` est versionné.
+  - Ajout de la configuration `vercel.json` avec règles de réécriture SPA (`/(.*) -> /index.html`) et mise en cache des assets statiques.
+  - Création du script sécurisé `scripts/sync-vercel-env.mjs` (`npm run sync:vercel`) permettant d'injecter automatiquement toutes les variables d'environnement (`VITE_DATA_PROVIDER`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`) vers Vercel (Production, Preview, Development) par flux `stdin` sans jamais afficher les clés en clair.
+  - Rédaction du guide exhaustif `VERCEL_DEPLOY.md` détaillant le déploiement continu, l'étanchéité des secrets et la portabilité inter-machines (permettant la suppression locale du projet sans perte de données ni interruption de service).
