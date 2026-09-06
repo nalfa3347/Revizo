@@ -32,35 +32,57 @@ export interface UserProgress {
   userId: string;
   totalXp: number;
   level: number;
-  xpToNextLevel?: number; // Ex: 260 XP avant le niveau 9
+  xpToNextLevel?: number;
   currentStreak: number;
   longestStreak: number;
   diamondsBalance: number;
   energyBalance: number; // 0 à 3 max
-  dailyGoalMinutes: number; // Ex: 15 min
-  dailyGoalProgressMinutes: number; // Ex: 10 min (70%)
+  dailyGoalMinutes: number;
+  dailyGoalProgressMinutes: number;
   lastActivityDate: string;
-  weeklyDays?: boolean[]; // Ex: [true, true, true, true, true, true, false] pour L, M, M, J, V, S, D
+  weeklyDays?: boolean[];
 }
 
 export interface Subject {
   id: string;
   name: string;
-  color: string; // Ex: '#F59E0B'
-  icon: string;  // Nom d'icône Lucide
-  masteryScore?: number; // Ex: 78%
-  level?: number;        // Ex: Niveau 6
+  color: string;
+  icon: string;
+  masteryScore?: number;
+  level?: number;
+}
+
+export interface SourceReference {
+  page?: number;
+  section?: string;
+  paragraphSnippet?: string;
+}
+
+export type MustMemorizePriority = 'essential' | 'important' | 'useful' | 'contextual';
+
+export interface MustMemorizeItem {
+  conceptId: string;
+  item: string;
+  reason: string;
+  priority: MustMemorizePriority;
+  sourceReferences: SourceReference[];
 }
 
 export interface CourseConcept {
   id: string;
   courseId: string;
   name: string;
+  definition?: string;
+  explanation?: string;
   summary: string;
   importance: 1 | 2 | 3 | 4 | 5;
+  difficulty?: 1 | 2 | 3 | 4 | 5;
   masteryScore: number; // 0 à 100%
   keyPoints: string[];
   rulesFormulas?: string[];
+  prerequisites?: string[];
+  relatedConcepts?: string[];
+  sourceReferences?: SourceReference[];
   isWeak?: boolean; // Déduit si masteryScore < 60%
 }
 
@@ -72,6 +94,7 @@ export interface RevisionSection {
   keyTakeaways: string[];
   formulas?: string[];
   examples?: string[];
+  sourceReferences?: SourceReference[];
 }
 
 export interface CourseAnalysis {
@@ -79,17 +102,57 @@ export interface CourseAnalysis {
   title: string;
   subjectName: string;
   subjectId: string;
+  schoolLevel?: SchoolLevel;
+  language?: string;
+  coursePurpose?: string;
+  centralIdea?: string;
+  learningObjectives?: string[];
+  prerequisites?: string[];
   summary: string;
   difficulty: 1 | 2 | 3 | 4 | 5;
   concepts: CourseConcept[];
+  mustMemorize?: MustMemorizeItem[];
+  methods?: {
+    name: string;
+    purpose: string;
+    steps: string[];
+    conditions?: string;
+    sourceReferences: SourceReference[];
+  }[];
+  rulesFormulas?: {
+    expression: string;
+    meaning: string;
+    conditions?: string;
+    sourceReferences: SourceReference[];
+  }[];
+  examples?: {
+    statement: string;
+    explanation: string;
+    conceptIds: string[];
+    sourceReferences: SourceReference[];
+  }[];
   sections: {
     title: string;
     content: string;
     keyTakeaways: string[];
+    sourceReferences?: SourceReference[];
   }[];
   extractedKeywords: string[];
   rawTextSnippet?: string;
   pagesCount?: number;
+}
+
+export interface RevisionMethod {
+  name: string;
+  steps: string[];
+  conceptId?: string;
+}
+
+export interface RevisionFormula {
+  name: string;
+  formula: string;
+  conditions?: string;
+  conceptId?: string;
 }
 
 export interface Revision {
@@ -97,7 +160,15 @@ export interface Revision {
   courseId: string;
   courseTitle: string;
   title: string;
-  summary: string;
+  summary: string; // essentialSummary
+  essentialSummary?: string;
+  fundamentalNotions?: string[];
+  keyPoints?: string[];
+  methods?: RevisionMethod[];
+  formulas?: RevisionFormula[];
+  examples?: string[];
+  commonPitfalls?: string[];
+  memorizationChecklist?: string[];
   sections: RevisionSection[];
   totalSections: number;
   keyConcepts: string[];
@@ -122,8 +193,8 @@ export interface Course {
   fileSize?: number;
   createdAt: string;
   updatedAt: string;
-  isDownloaded?: boolean; // Indique si la révision a été téléchargée sur l'appareil
-  progressPercentage?: number; // Pourcentage de révision (ex: 65%)
+  isDownloaded?: boolean;
+  progressPercentage?: number;
 }
 
 export interface QuizQuestion {
@@ -137,6 +208,7 @@ export interface QuizQuestion {
   correctChoiceIndex: number;
   explanation: string;
   difficulty: 1 | 2 | 3;
+  sourceReferences?: SourceReference[];
 }
 
 export interface Quiz {
@@ -150,6 +222,58 @@ export interface Quiz {
   bestScore?: number;
   lastPlayedAt?: string;
   questions: QuizQuestion[];
+  purpose?: string;
+  scheduledSession?: number;
+}
+
+export interface ComprehensionQuestion {
+  id: string;
+  courseId: string;
+  conceptId?: string;
+  question: string;
+  expectedAnswer: string;
+  explanation: string;
+  type?: 'comprehension' | 'definition' | 'relation' | 'method' | 'application';
+  sourceReferences: SourceReference[];
+  userAnswer?: string;
+  isVerified?: boolean;
+  createdAt?: string;
+}
+
+export interface Exercise {
+  id: string;
+  courseId: string;
+  conceptId?: string;
+  statement: string;
+  instructions: string;
+  expectedMethod?: string;
+  correction: string;
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  sourceReferences: SourceReference[];
+  status: 'pending' | 'completed' | 'needs_review';
+  userAnswer?: string;
+  score?: number;
+  createdAt?: string;
+}
+
+export interface PlannedQuizItem {
+  quizId: string;
+  title: string;
+  purpose: string;
+  difficulty: 1 | 2 | 3;
+  conceptIds: string[];
+  questionsCount: number;
+  scheduledSession: number;
+  isReady: boolean;
+}
+
+export interface QuizPlan {
+  id: string;
+  courseId: string;
+  title: string;
+  plannedQuizzes: PlannedQuizItem[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface QuizAttempt {
@@ -206,7 +330,7 @@ export interface AppNotification {
   read: boolean;
   createdAt: string;
   targetTab?: 'revisions' | 'courses' | 'quizzes' | 'profile';
-  targetId?: string; // ID du cours ou du quiz associé
+  targetId?: string;
   relativeTime?: string;
 }
 
@@ -233,4 +357,3 @@ export interface AppSettings {
   notificationsDailyReminders: boolean;
   notificationsRewards: boolean;
 }
-

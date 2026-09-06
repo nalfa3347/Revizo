@@ -5,3 +5,6 @@ export * from './QuizRepository';
 export * from './ProgressRepository';
 export * from './NotificationRepository';
 export * from './SettingsRepository';
+export * from './ConceptRepository';
+export * from './ExerciseRepository';
+

@@ -154,7 +154,23 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
                 fontWeight: 600
               }}
             >
-              <span>{progress.stage === 'extracting' ? 'Étape 1/4' : progress.stage === 'analyzing' ? 'Étape 2/4' : progress.stage === 'generating_rev' ? 'Étape 3/4' : 'Étape 4/4'}</span>
+              <span>
+                {progress.stage === 'reading' || progress.stage === 'extracting'
+                  ? 'Étape 1/7'
+                  : progress.stage === 'understanding' || progress.stage === 'analyzing'
+                  ? 'Étape 2/7'
+                  : progress.stage === 'prioritizing'
+                  ? 'Étape 3/7'
+                  : progress.stage === 'generating_rev'
+                  ? 'Étape 4/7'
+                  : progress.stage === 'generating_questions'
+                  ? 'Étape 5/7'
+                  : progress.stage === 'generating_quiz'
+                  ? 'Étape 6/7'
+                  : progress.stage === 'generating_exercises'
+                  ? 'Étape 7/7'
+                  : 'Traitement'}
+              </span>
               <span>{progress.percent}%</span>
             </div>
           </div>
@@ -221,7 +237,7 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
                   {result.course.subjectName}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
-                  • {result.analysis.concepts.length} notions identifiées
+                  • {result.analysis?.concepts?.length ?? 0} notions identifiées
                 </span>
               </div>
 
@@ -245,12 +261,12 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
                   marginBottom: '12px'
                 }}
               >
-                {result.analysis.summary}
+                {result.analysis?.summary || result.course.summary}
               </p>
 
               {/* Notions clés identifiées */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {result.analysis.concepts.map(concept => (
+                {(result.analysis?.concepts || []).map(concept => (
                   <span
                     key={concept.id}
                     style={{

@@ -12,7 +12,10 @@ import {
   ProcessingJob,
   AppNotification,
   AppSettings,
-  SearchResultItem
+  SearchResultItem,
+  ComprehensionQuestion,
+  Exercise,
+  QuizPlan
 } from '../../types';
 import {
   INITIAL_PROFILE,
@@ -36,6 +39,9 @@ export class MockDataProvider implements IDataProvider {
   private revisions: Revision[];
   private quizzes: Quiz[];
   private notifications: AppNotification[];
+  private comprehensionQuestions: ComprehensionQuestion[] = [];
+  private exercises: Exercise[] = [];
+  private quizPlans: Map<string, QuizPlan> = new Map();
   private activeSessions: Map<string, QuizSession> = new Map();
   private jobs: Map<string, ProcessingJob> = new Map();
   private latencyMs: number;
@@ -354,7 +360,10 @@ export class MockDataProvider implements IDataProvider {
     course: Course,
     concepts: CourseConcept[],
     revision: Revision,
-    quiz: Quiz
+    quiz: Quiz,
+    comprehensionQuestions?: ComprehensionQuestion[],
+    exercises?: Exercise[],
+    quizPlan?: QuizPlan
   ): Promise<void> {
     await this.simulateDelay();
     // Insère le cours en tête de liste
@@ -362,6 +371,30 @@ export class MockDataProvider implements IDataProvider {
     this.concepts.unshift(...concepts.map(c => ({ ...c })));
     this.revisions.unshift({ ...revision });
     this.quizzes.unshift({ ...quiz });
+    if (comprehensionQuestions && comprehensionQuestions.length > 0) {
+      this.comprehensionQuestions.unshift(...comprehensionQuestions.map(q => ({ ...q })));
+    }
+    if (exercises && exercises.length > 0) {
+      this.exercises.unshift(...exercises.map(e => ({ ...e })));
+    }
+    if (quizPlan) {
+      this.quizPlans.set(quizPlan.courseId, { ...quizPlan });
+    }
+  }
+
+  async getComprehensionQuestions(courseId: string): Promise<ComprehensionQuestion[]> {
+    await this.simulateDelay();
+    return this.comprehensionQuestions.filter(q => q.courseId === courseId);
+  }
+
+  async getExercises(courseId: string): Promise<Exercise[]> {
+    await this.simulateDelay();
+    return this.exercises.filter(e => e.courseId === courseId);
+  }
+
+  async getQuizPlan(courseId: string): Promise<QuizPlan | null> {
+    await this.simulateDelay();
+    return this.quizPlans.get(courseId) || null;
   }
 
   async getNotifications(): Promise<AppNotification[]> {

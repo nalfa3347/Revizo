@@ -47,3 +47,6 @@ scratch_edge/
 # OS-specific
 Thumbs.db
 Desktop.ini
+
+# Supabase temp
+supabase/.temp/

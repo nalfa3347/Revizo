@@ -12,12 +12,12 @@ export class RevisionMapper {
       keyConcepts: Array.isArray(row.key_concepts) ? row.key_concepts : [],
       rulesFormulas: Array.isArray(row.rules_formulas) ? row.rules_formulas : [],
       sections: Array.isArray(row.sections)
-        ? row.sections.map((s, idx): RevisionSection => ({
+        ? row.sections.map((s: any, idx: number): RevisionSection => ({
             id: s.id || `sec-${idx + 1}`,
-            order: s.order ?? idx + 1,
+            order: s.order ?? s.orderIndex ?? idx + 1,
             title: s.title,
             content: s.content,
-            keyTakeaways: s.keyTakeaways || [],
+            keyTakeaways: s.keyTakeaways || s.key_takeaways || [],
             formulas: s.formulas,
             examples: s.examples
           }))

@@ -193,6 +193,55 @@ export type SupabaseSettingsRow = {
   updated_at: string;
 };
 
+export type SupabaseComprehensionQuestionRow = {
+  id: string;
+  course_id: string;
+  concept_id: string | null;
+  user_id: string;
+  question: string;
+  expected_answer: string;
+  explanation: string;
+  source_references: Array<{ page?: number; section?: string; paragraphSnippet?: string }>;
+  created_at: string;
+};
+
+export type SupabaseQuizPlanRow = {
+  id: string;
+  course_id: string;
+  user_id: string;
+  title: string;
+  planned_quizzes: Array<{
+    quizId: string;
+    title: string;
+    purpose: string;
+    difficulty: number;
+    conceptIds: string[];
+    questionsCount: number;
+    scheduledSession: number;
+    isReady: boolean;
+  }>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupabaseExerciseRow = {
+  id: string;
+  course_id: string;
+  concept_id: string | null;
+  user_id: string;
+  statement: string;
+  instructions: string;
+  expected_method: string | null;
+  correction: string;
+  difficulty: number;
+  source_references: Array<{ page?: number; section?: string; paragraphSnippet?: string }>;
+  status: 'pending' | 'completed' | 'needs_review';
+  user_answer: string | null;
+  score: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 /**
  * Schéma Database global conforme GenericSchema pour @supabase/supabase-js
  */
@@ -296,6 +345,32 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<SupabaseSettingsRow>;
+        Relationships: [];
+      };
+      comprehension_questions: {
+        Row: SupabaseComprehensionQuestionRow;
+        Insert: Omit<SupabaseComprehensionQuestionRow, 'created_at'> & {
+          created_at?: string;
+        };
+        Update: Partial<SupabaseComprehensionQuestionRow>;
+        Relationships: [];
+      };
+      quiz_plans: {
+        Row: SupabaseQuizPlanRow;
+        Insert: Omit<SupabaseQuizPlanRow, 'created_at' | 'updated_at'> & {
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<SupabaseQuizPlanRow>;
+        Relationships: [];
+      };
+      exercises: {
+        Row: SupabaseExerciseRow;
+        Insert: Omit<SupabaseExerciseRow, 'created_at' | 'updated_at'> & {
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<SupabaseExerciseRow>;
         Relationships: [];
       };
     };

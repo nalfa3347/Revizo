@@ -10,7 +10,10 @@ import {
   Subject,
   AppNotification,
   AppSettings,
-  SearchResultItem
+  SearchResultItem,
+  ComprehensionQuestion,
+  Exercise,
+  QuizPlan
 } from '../types';
 
 /**
@@ -66,8 +69,16 @@ export interface IDataProvider {
     course: Course,
     concepts: CourseConcept[],
     revision: Revision,
-    quiz: Quiz
+    quiz: Quiz,
+    comprehensionQuestions?: ComprehensionQuestion[],
+    exercises?: Exercise[],
+    quizPlan?: QuizPlan
   ): Promise<void>;
+
+  // Curriculum Avancé
+  getComprehensionQuestions(courseId: string): Promise<ComprehensionQuestion[]>;
+  getExercises(courseId: string): Promise<Exercise[]>;
+  getQuizPlan(courseId: string): Promise<QuizPlan | null>;
 
   // Notifications
   getNotifications(): Promise<AppNotification[]>;

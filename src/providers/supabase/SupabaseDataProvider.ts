@@ -14,7 +14,10 @@ import {
   AppNotification,
   AppSettings,
   SearchResultItem,
-  QuizAttempt
+  QuizAttempt,
+  ComprehensionQuestion,
+  Exercise,
+  QuizPlan
 } from '../../types';
 import { UserRepository } from '../../repositories/UserRepository';
 import { CourseRepository } from '../../repositories/CourseRepository';
@@ -23,6 +26,7 @@ import { QuizRepository } from '../../repositories/QuizRepository';
 import { ProgressRepository } from '../../repositories/ProgressRepository';
 import { NotificationRepository } from '../../repositories/NotificationRepository';
 import { SettingsRepository } from '../../repositories/SettingsRepository';
+import { ExerciseRepository } from '../../repositories/ExerciseRepository';
 
 /**
  * REVIZO — SupabaseDataProvider
@@ -37,6 +41,7 @@ export class SupabaseDataProvider implements IDataProvider {
   private progressRepo: ProgressRepository;
   private notifRepo: NotificationRepository;
   private settingsRepo: SettingsRepository;
+  private exerciseRepo: ExerciseRepository;
 
   private currentUserId: string = '';
   private activeSessions: Map<string, QuizSession> = new Map();
@@ -50,6 +55,7 @@ export class SupabaseDataProvider implements IDataProvider {
     this.progressRepo = new ProgressRepository(client);
     this.notifRepo = new NotificationRepository(client);
     this.settingsRepo = new SettingsRepository(client);
+    this.exerciseRepo = new ExerciseRepository(client);
 
     if (initialUser) {
       this.currentUserId = initialUser.id;
@@ -479,7 +485,10 @@ export class SupabaseDataProvider implements IDataProvider {
     course: Course,
     concepts: CourseConcept[],
     revision: Revision,
-    quiz: Quiz
+    quiz: Quiz,
+    comprehensionQuestions?: ComprehensionQuestion[],
+    exercises?: Exercise[],
+    quizPlan?: QuizPlan
   ): Promise<void> {
     await this.courseRepo.create(course, this.currentUserId);
     await this.revisionRepo.create(revision, this.currentUserId);
@@ -502,6 +511,33 @@ export class SupabaseDataProvider implements IDataProvider {
       }));
       await this.client.from('concepts').insert(conceptsPayload as any);
     }
+
+    if (comprehensionQuestions && comprehensionQuestions.length > 0) {
+      await this.exerciseRepo.saveComprehensionQuestions(comprehensionQuestions, this.currentUserId);
+    }
+
+    if (exercises && exercises.length > 0) {
+      await this.exerciseRepo.saveExercises(exercises, this.currentUserId);
+    }
+
+    if (quizPlan) {
+      await this.exerciseRepo.saveQuizPlan(quizPlan, this.currentUserId);
+    }
+  }
+
+  // ----------------------------------------------------
+  // CURRICULUM AVANCÉ (COMPRÉHENSION, EXERCICES, QUIZ PLANS)
+  // ----------------------------------------------------
+  async getComprehensionQuestions(courseId: string): Promise<ComprehensionQuestion[]> {
+    return this.exerciseRepo.getComprehensionQuestionsByCourseId(courseId, this.currentUserId);
+  }
+
+  async getExercises(courseId: string): Promise<Exercise[]> {
+    return this.exerciseRepo.getExercisesByCourseId(courseId, this.currentUserId);
+  }
+
+  async getQuizPlan(courseId: string): Promise<QuizPlan | null> {
+    return this.exerciseRepo.getQuizPlanByCourseId(courseId, this.currentUserId);
   }
 
   // ----------------------------------------------------
