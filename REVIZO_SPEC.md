@@ -433,3 +433,13 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - `AuthView` : masquage des indices de compte démo en mode réel Supabase.
     - `SupabaseDataProvider` : calcul dynamique en temps réel des moyennes de maîtrise par matière à partir de la table PostgreSQL `concepts`, et retour de valeurs neutres (0%, niveau 1) en cas d'absence de données au lieu de faux chiffres.
   - 100% de réussite aux tests automatisés (16 fichiers, 88 tests validés) et compilation de production Vite sans erreur.
+- [x] **PHASE CORRECTION & FIABILISATION DE LA GÉNÉRATION DE PDF NATIF (PDF 1.4 BINAIRE)** (Terminée et Validée le 2026-09-06)
+  - Diagnostic approfondi : l'ancienne implémentation utilisait l'opérateur PDF relatif `Td` avec des coordonnées absolues cumulatives, ce qui décalait toutes les lignes après la première en dehors de la page visible (Y > 1500+). De plus, l'encodage UTF-8 brut dans les polices Type 1 WinAnsi générait du mojibake (`â€”`, `RÃ©vision`).
+  - Implémentation du moteur de rendu PDF 1.4 pur avec positionnement absolu strict via matrices `1 0 0 1 x y Tm`.
+  - Mappage et échappement octal WinAnsi complet des caractères accentués français (`é`, `è`, `ê`, `à`, `ô`, `ù`, `ç`, `É`, `È`, `—`, `–`, `•`, etc.).
+  - Design premium conforme aux règles de la marque REVIZO : bandeau supérieur indigo (`#4F46E5`), logo REVIZO, badge de certification scolaire, carte de résumé avec aplat et barre d'accent gauche, puces et flèches stylisées, sections numérotées, blocs "À retenir" et "Exemples".
+  - Pagination dynamique automatique multipages avec en-têtes de continuation et pied de page officiel ("Page X sur Y") sur toutes les pages.
+  - Sécurisation du téléchargement navigateur avec libération temporisée du blob (`setTimeout(() => URL.revokeObjectURL(url), 1500)`).
+  - Suite de tests dédiés [src/test/PDFGeneration.test.ts](file:///c:/REVIZO%202.0/src/test/PDFGeneration.test.ts) validant la syntaxe PDF, l'absence de mojibake, l'analyse binaire par `pdfjs-dist` et la validité des coordonnées de tous les blocs de texte sur la feuille A4.
+  - 17 fichiers de tests, 93 tests réussis sur 93 (100% de succès) et build de production Vite sans erreur.
+
