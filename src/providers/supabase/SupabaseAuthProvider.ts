@@ -150,6 +150,11 @@ export class SupabaseAuthProvider implements IAuthProvider {
       throw new Error(error?.message || 'Impossible de créer le compte.');
     }
 
+    // Détection Supabase : si l'utilisateur existe déjà, identities est une liste vide
+    if (data.user.identities && data.user.identities.length === 0) {
+      throw new Error("Un compte existe déjà avec cette adresse email. Veuillez vous connecter directement.");
+    }
+
     const newProfile: UserProfile = {
       id: data.user.id,
       email: data.user.email || (type === 'email' ? normalized : ''),
@@ -160,32 +165,41 @@ export class SupabaseAuthProvider implements IAuthProvider {
     };
 
     // Initialisation profil, progression et paramètres dans Supabase
-    await this.userRepo.upsert(newProfile);
-    await this.progressRepo.upsert({
-      userId: data.user.id,
-      totalXp: 0,
-      level: 1,
-      xpToNextLevel: 100,
-      currentStreak: 1,
-      longestStreak: 1,
-      diamondsBalance: 10,
-      energyBalance: 3,
-      dailyGoalMinutes: 15,
-      dailyGoalProgressMinutes: 0,
-      lastActivityDate: new Date().toISOString().split('T')[0],
-      weeklyDays: [true, false, false, false, false, false, false]
-    });
-    await this.settingsRepo.upsert(
-      {
-        theme: 'light',
-        animationsEnabled: true,
-        language: 'fr',
-        notificationsRevision: true,
-        notificationsDailyReminders: true,
-        notificationsRewards: true
-      },
-      data.user.id
-    );
+    // Note : Le trigger PostgreSQL `on_auth_user_created` (SECURITY DEFINER) initialise déjà
+    // automatiquement users, user_progress et user_settings en base de données.
+    // Les upserts client ne sont exécutés que si une session active est disponible.
+    if (data.session) {
+      try {
+        await this.userRepo.upsert(newProfile);
+        await this.progressRepo.upsert({
+          userId: data.user.id,
+          totalXp: 0,
+          level: 1,
+          xpToNextLevel: 100,
+          currentStreak: 1,
+          longestStreak: 1,
+          diamondsBalance: 10,
+          energyBalance: 3,
+          dailyGoalMinutes: 15,
+          dailyGoalProgressMinutes: 0,
+          lastActivityDate: new Date().toISOString().split('T')[0],
+          weeklyDays: [true, false, false, false, false, false, false]
+        });
+        await this.settingsRepo.upsert(
+          {
+            theme: 'light',
+            animationsEnabled: true,
+            language: 'fr',
+            notificationsRevision: true,
+            notificationsDailyReminders: true,
+            notificationsRewards: true
+          },
+          data.user.id
+        );
+      } catch (clientInitErr) {
+        console.warn('[SupabaseAuthProvider] Initialisation client facultative (déjà assurée par trigger) :', clientInitErr);
+      }
+    }
 
     return newProfile;
   }

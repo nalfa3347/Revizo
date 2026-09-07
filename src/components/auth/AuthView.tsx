@@ -169,7 +169,19 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
       setCreatedUserName(newUser.displayName);
       setAuthMode('onboarding');
     } catch (err: any) {
-      setErrorMessage(err.message || 'Impossible de créer ton compte. Vérifie tes informations.');
+      const rawMsg = err?.message || '';
+      if (
+        rawMsg.includes('row-level security') ||
+        rawMsg.includes('already registered') ||
+        rawMsg.includes('existe déjà') ||
+        rawMsg.includes('User already registered')
+      ) {
+        setErrorMessage('Un compte existe déjà avec cette adresse email.');
+        setLoginIdentifier(trimmedId);
+        setLoginMethod(signupMethod);
+      } else {
+        setErrorMessage(rawMsg || 'Impossible de créer ton compte. Vérifie tes informations.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -236,11 +248,38 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
           )}
         </div>
 
-        {/* MESSAGE D'ERREUR BIENVEILLANT SANS JARGON TECHNIQUE */}
         {errorMessage && (
           <div className="auth-error-banner" id="auth-error-notice">
             <AlertCircle size={18} className="auth-error-icon" />
-            <span>{errorMessage}</span>
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <span>{errorMessage}</span>
+              {authMode === 'signup' && errorMessage.includes('existe déjà') && (
+                <div style={{ marginTop: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('login');
+                      setLoginIdentifier(signupIdentifier.trim());
+                      setLoginMethod(signupMethod);
+                      setLoginStep('password');
+                      setErrorMessage(null);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#EA580C',
+                      fontWeight: 700,
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontSize: '0.88rem'
+                    }}
+                  >
+                    Se connecter avec ce compte →
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
