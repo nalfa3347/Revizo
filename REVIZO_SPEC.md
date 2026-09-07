@@ -605,9 +605,13 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - Création de `public/manifest.json` avec nom, thème `#EA580C` et icônes orange.
     - Création et enregistrement du Service Worker `public/sw.js` dans `src/main.tsx`.
     - Composant `PwaInstallButton.tsx` : détection du scroll (dès 150px de défilement) et déclenchement automatique du prompt natif d'installation sur Android/Chrome via `beforeinstallprompt`, ou guidage visuel en 2 étapes pour iPhone/iOS Safari.
+  - **Optimisation Responsive de la Barre de Navigation Mobile** :
+    - Résolution du débordement sur formats mobiles (< 640px et jusqu'à 320px) : masquage des éléments secondaires dans le bandeau supérieur (`FR` et `Commencer`) et intégration propre dans le menu déroulant.
+    - Le bouton **« Connexion »** est désormais parfaitement calé en haut à droite dans un format pilule épuré, accompagné du bouton burger `[ ☰ ]`, sans aucun dépassement ou coupure.
   - **Validation & Non-Régression** :
     - Tests unitaires et E2E : **22 suites de tests, 160 tests réussis sur 160 (100% de succès)**.
     - TypeScript : 0 erreur (`tsc -b --noEmit`).
     - Build de production : `tsc -b && vite build` validé avec succès.
+    - Poussé sur Git `origin main` (déploiement automatique Vercel).
 
 
