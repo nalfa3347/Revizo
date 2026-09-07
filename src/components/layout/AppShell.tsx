@@ -12,7 +12,7 @@ import {
 import { useData } from '../../context/DataContext';
 import { NetworkBar } from '../common/NetworkBar';
 
-export type TabKey = 'home' | 'revisions' | 'courses' | 'quizzes' | 'profile' | 'search' | 'notifications' | 'settings';
+export type TabKey = 'home' | 'revisions' | 'courses' | 'quizzes' | 'profile' | 'search' | 'notifications' | 'settings' | 'diamonds' | 'subscription' | 'referral';
 
 interface AppShellProps {
   currentTab: TabKey;
@@ -24,6 +24,9 @@ interface AppShellProps {
   onBackFromSettings?: () => void;
   onBackFromSearch?: () => void;
   onBackFromNotifications?: () => void;
+  onBackFromDiamonds?: () => void;
+  onBackFromSubscription?: () => void;
+  onBackFromReferral?: () => void;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ 
@@ -35,9 +38,12 @@ export const AppShell: React.FC<AppShellProps> = ({
   onBackFromProfile,
   onBackFromSettings,
   onBackFromSearch,
-  onBackFromNotifications
+  onBackFromNotifications,
+  onBackFromDiamonds,
+  onBackFromSubscription,
+  onBackFromReferral
 }) => {
-  const { profile, progress, notifications, unreadNotificationsCount } = useData();
+  const { profile, progress, notifications, unreadNotificationsCount, economy } = useData();
   const unreadCount = unreadNotificationsCount !== undefined ? unreadNotificationsCount : notifications.filter(n => !n.read).length;
   const userInitial = (profile?.displayName || 'Élève').charAt(0).toUpperCase();
 
@@ -209,6 +215,48 @@ export const AppShell: React.FC<AppShellProps> = ({
             ) : (
               <h1 className="header-revision-title">Notifications</h1>
             )
+          ) : currentTab === 'diamonds' ? (
+            onBackFromDiamonds ? (
+              <button
+                className="btn-header-back"
+                onClick={onBackFromDiamonds}
+                title="Retour"
+                id="btn-diamonds-header-back"
+              >
+                <ArrowLeft size={18} strokeWidth={2.5} />
+                <span>Retour</span>
+              </button>
+            ) : (
+              <h1 className="header-revision-title">Mes diamants</h1>
+            )
+          ) : currentTab === 'subscription' ? (
+            onBackFromSubscription ? (
+              <button
+                className="btn-header-back"
+                onClick={onBackFromSubscription}
+                title="Retour"
+                id="btn-subscription-header-back"
+              >
+                <ArrowLeft size={18} strokeWidth={2.5} />
+                <span>Retour</span>
+              </button>
+            ) : (
+              <h1 className="header-revision-title">Abonnement</h1>
+            )
+          ) : currentTab === 'referral' ? (
+            onBackFromReferral ? (
+              <button
+                className="btn-header-back"
+                onClick={onBackFromReferral}
+                title="Retour"
+                id="btn-referral-header-back"
+              >
+                <ArrowLeft size={18} strokeWidth={2.5} />
+                <span>Retour</span>
+              </button>
+            ) : (
+              <h1 className="header-revision-title">Parrainage</h1>
+            )
           ) : (
             <div className="header-brand">
               <span className="brand-title-text">
@@ -220,8 +268,59 @@ export const AppShell: React.FC<AppShellProps> = ({
           {/* Espace flexible pour repousser les actions à droite */}
           <div style={{ flex: 1 }} />
 
-          {/* Actions : Recherche, Notifications, Profil (Mobile) */}
+          {/* Actions : Diamants & Énergie, Recherche, Notifications, Profil (Mobile) */}
           <div className="header-actions">
+            {/* Badges Économie 💎 & ⚡ */}
+            <div className="header-economy-pills" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '4px' }}>
+              <button
+                className="economy-header-pill pill-diamonds"
+                onClick={() => onNavigate('diamonds')}
+                title="Consulter mes diamants"
+                id="header-diamonds-pill"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  backgroundColor: '#FFFBEB',
+                  border: '1px solid #FDE68A',
+                  borderRadius: '999px',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  color: '#B45309',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>💎</span>
+                <span>{economy?.diamonds.balance ?? progress?.diamondsBalance ?? 0}</span>
+              </button>
+
+              <button
+                className="economy-header-pill pill-energy"
+                onClick={() => onNavigate('diamonds')}
+                title="Consulter mon énergie"
+                id="header-energy-pill"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  backgroundColor: '#FFF7ED',
+                  border: '1px solid #FFEDD5',
+                  borderRadius: '999px',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  color: '#C2410C',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>⚡</span>
+                <span>{economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10}/{economy?.energy.maxEnergy ?? 10}</span>
+              </button>
+            </div>
+
             <button
               className={`header-icon-btn ${currentTab === 'search' ? 'active' : ''}`}
               onClick={() => onNavigate('search')}

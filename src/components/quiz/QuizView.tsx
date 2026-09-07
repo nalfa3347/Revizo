@@ -51,6 +51,9 @@ export const QuizView: React.FC<QuizViewProps> = ({
     gamificationService,
     refreshProgress,
     progress,
+    economy,
+    economyService,
+    refreshEconomy,
     network
   } = useData();
 
@@ -136,14 +139,19 @@ export const QuizView: React.FC<QuizViewProps> = ({
     setNoticeMsg(null);
   };
 
-  // Recharger l'énergie avec 10 diamants (Gamification)
+  // Recharger l'énergie avec 5 diamants (Règle officielle : 5 💎 = 1 ⚡)
   const handleRefillEnergy = async () => {
     try {
-      await gamificationService.refillEnergyWithDiamonds();
-      await refreshProgress();
-      setNoticeMsg('⚡ Tes 3 énergies ont été entièrement rechargées !');
+      const res = await economyService.convertDiamondsToEnergy();
+      if (res.success) {
+        await refreshEconomy();
+        await refreshProgress();
+        setNoticeMsg('⚡ +1 énergie rechargée avec 5 diamants !');
+      } else {
+        setNoticeMsg(res.message || 'Diamants insuffisants (5 💎 requis pour 1 ⚡) ou limite quotidienne atteinte.');
+      }
     } catch {
-      setNoticeMsg('Diamants insuffisants pour recharger ton énergie (10 diamants requis).');
+      setNoticeMsg('Impossible de recharger l’énergie pour le moment.');
     }
   };
 
@@ -156,8 +164,9 @@ export const QuizView: React.FC<QuizViewProps> = ({
     }
 
     // Vérification de l'énergie disponible
-    if ((progress?.energyBalance ?? 3) <= 0) {
-      setNoticeMsg("Plus d'énergie disponible. Recharge tes 3 énergies avec tes diamants.");
+    const currentEnergy = economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10;
+    if (currentEnergy <= 0) {
+      setNoticeMsg("Plus d'énergie disponible (0 ⚡). Tu peux convertir 5 💎 en 1 ⚡ dans 'Mes diamants' ou attendre la prochaine recharge.");
       return;
     }
 
@@ -251,6 +260,11 @@ export const QuizView: React.FC<QuizViewProps> = ({
     } else {
       // Fin du quiz
       await gamificationService.recordDailyStreak();
+      const scorePct = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+      if (economyService && activeQuiz) {
+        await economyService.rewardQuizCompletion(activeQuiz.id, scorePct, activeCourse?.title);
+        await refreshEconomy();
+      }
       await refreshProgress();
       // Recharger les notions fragiles à jour
       const weaks = await dataProvider.getWeakConcepts();
@@ -441,7 +455,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
             </div>
             <div className="quiz-prep-meta-item">
               <span className="quiz-prep-meta-label">Récompenses</span>
-              <span className="quiz-prep-meta-value">+25 XP / réponse + 5 💎</span>
+              <span className="quiz-prep-meta-value">+2 💎 (+3 💎 bonus si ≥ 80%)</span>
             </div>
           </div>
 
@@ -511,7 +525,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
             <div className="quiz-stat-pill energy" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
               <Zap size={14} fill="currentColor" />
-              <span>{progress?.energyBalance ?? 3}/3</span>
+              <span>{economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10}/{economy?.energy.maxEnergy ?? 10}</span>
             </div>
           </div>
 

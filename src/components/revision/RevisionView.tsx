@@ -14,7 +14,8 @@ import {
   Download,
   Check,
   RotateCw,
-  FileUp
+  FileUp,
+  Gem
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Course, Revision, Quiz } from '../../types';
@@ -27,6 +28,7 @@ import { PipelineProgress, PipelineResult } from '../../services/ai/AIOrchestrat
 interface RevisionViewProps {
   onNavigateToCourses: () => void;
   onStartQuiz: (course: Course) => void;
+  onNavigateToSubscription?: () => void;
   onReadingChange?: (isReading: boolean) => void;
   registerBackHandler?: (handler: () => void) => void;
   initialCourse?: Course | null;
@@ -35,11 +37,12 @@ interface RevisionViewProps {
 export const RevisionView: React.FC<RevisionViewProps> = ({
   onNavigateToCourses,
   onStartQuiz,
+  onNavigateToSubscription,
   onReadingChange,
   registerBackHandler,
   initialCourse
 }) => {
-  const { revisionService, courseService, network, aiOrchestrator, profile } = useData();
+  const { revisionService, courseService, network, aiOrchestrator, profile, economyService, refreshEconomy } = useData();
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeRevision, setActiveRevision] = useState<Revision | null>(null);
@@ -54,6 +57,28 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
   const [importedCourses, setImportedCourses] = useState<Course[]>([]);
   const [realCourses, setRealCourses] = useState<Course[]>([]);
   const [activeQuizToPlay, setActiveQuizToPlay] = useState<{ course: Course; quiz: Quiz } | null>(null);
+
+  // État de récompense de révision
+  const [isClaimingRevisionReward, setIsClaimingRevisionReward] = useState(false);
+  const [revisionCompletedRewardNotice, setRevisionCompletedRewardNotice] = useState<string | null>(null);
+
+  const handleCompleteRevisionReward = async (revisionId: string, courseTitle?: string) => {
+    try {
+      setIsClaimingRevisionReward(true);
+      const res = await economyService.rewardRevisionCompletion(revisionId, courseTitle);
+      if (res.alreadyClaimed) {
+        setRevisionCompletedRewardNotice('Révision déjà validée ! (Diamants déjà crédités)');
+      } else if (res.success) {
+        setRevisionCompletedRewardNotice('+2 💎 ajoutés à ton solde ! Félicitations !');
+        await refreshEconomy();
+      }
+    } catch (err) {
+      console.error('Erreur claim reward:', err);
+    } finally {
+      setIsClaimingRevisionReward(false);
+      setTimeout(() => setRevisionCompletedRewardNotice(null), 6000);
+    }
+  };
 
   const fileInputPdfRef = useRef<HTMLInputElement>(null);
   const fileInputCameraRef = useRef<HTMLInputElement>(null);
@@ -247,9 +272,12 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
       setImportedCourses(prev => [result.course, ...prev]);
     } catch (err: any) {
       console.error('Erreur lors du traitement du document :', err);
+      const isQuota = err?.status === 429 || err?.quotaReached || err?.message?.includes('limite de révisions');
       setPipelineProgress({
         stage: 'error',
-        message: 'Impossible de lire le document. Vérifie son format et réessaie.',
+        message: isQuota
+          ? 'Tu as atteint ta limite de révisions du jour. Ton compteur sera réinitialisé demain.'
+          : 'Impossible de lire le document. Vérifie son format et réessaie.',
         percent: 0
       });
     }
@@ -434,6 +462,93 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
                 )}
               </section>
             ))}
+
+            {/* Carte de validation de révision & gain de diamants (+2 💎) */}
+            <div
+              style={{
+                marginTop: '32px',
+                padding: '24px',
+                borderRadius: '20px',
+                backgroundColor: '#FFFFFF',
+                border: '1.5px solid #FFEDD5',
+                boxShadow: '0 8px 24px rgba(234, 88, 12, 0.08)',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>🎉</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#111827', marginBottom: '6px' }}>
+                Tu as terminé la lecture de cette fiche !
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#4B5563', marginBottom: '16px' }}>
+                Valide ta révision pour enregistrer tes acquis et recevoir ta récompense de <strong>+2 💎</strong>.
+              </p>
+
+              {revisionCompletedRewardNotice && (
+                <div
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '12px',
+                    backgroundColor: '#ECFDF5',
+                    color: '#065F46',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    marginBottom: '14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Check size={16} />
+                  <span>{revisionCompletedRewardNotice}</span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => handleCompleteRevisionReward(activeRevision.id, activeRevision.title)}
+                  disabled={isClaimingRevisionReward}
+                  style={{
+                    padding: '12px 24px',
+                    borderRadius: '14px',
+                    backgroundColor: '#EA580C',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(234, 88, 12, 0.25)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Gem size={18} />
+                  <span>Valider ma révision (+2 💎)</span>
+                </button>
+
+                {selectedCourse && (
+                  <button
+                    onClick={() => onStartQuiz(selectedCourse)}
+                    style={{
+                      padding: '12px 20px',
+                      borderRadius: '14px',
+                      backgroundColor: '#FFFFFF',
+                      border: '1.5px solid #E5E7EB',
+                      color: '#374151',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span>Passer au quiz</span>
+                    <ArrowRight size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </article>
       </div>
@@ -672,6 +787,7 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
         }}
         onViewRevision={handleViewImportedRevision}
         onStartQuiz={handleStartImportedQuiz}
+        onNavigateToSubscription={onNavigateToSubscription}
       />
 
       {/* Modal de session de Quiz interactif */}

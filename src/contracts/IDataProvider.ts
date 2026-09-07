@@ -13,7 +13,14 @@ import {
   SearchResultItem,
   ComprehensionQuestion,
   Exercise,
-  QuizPlan
+  QuizPlan,
+  SubscriptionPlan,
+  EconomyState,
+  EnergyConversionResult,
+  RewardClaimResult,
+  RevisionUsageResult,
+  DiamondTransaction,
+  EnergyTransaction
 } from '../types';
 
 /**
@@ -28,6 +35,21 @@ export interface IDataProvider {
   setActiveProfile?(user: UserProfile): void;
   getProgress(): Promise<UserProgress>;
   spendDiamondsForEnergy(amount: number): Promise<{ success: boolean; newEnergy: number; newDiamonds: number }>;
+
+  // Économie, Abonnements, Énergie, Diamants & Parrainage
+  getEconomyState(): Promise<EconomyState>;
+  activateSubscription(plan: SubscriptionPlan, paymentProvider?: string, externalId?: string): Promise<EconomyState>;
+  createCheckoutSession(
+    plan: SubscriptionPlan,
+    customer?: { firstname?: string; lastname?: string; email?: string; phone?: string },
+    returnUrl?: string
+  ): Promise<{ success: boolean; checkoutUrl?: string; token?: string; transactionId?: string; simulated?: boolean; message?: string }>;
+  consumeEnergy(amount?: number, reason?: string, referenceId?: string): Promise<{ success: boolean; currentEnergy: number; maxEnergy: number; message?: string }>;
+  convertDiamondsToEnergy(): Promise<EnergyConversionResult>;
+  claimReward(eventKey: string, rewardType: string, diamonds: number, reason: string, metadata?: any): Promise<RewardClaimResult>;
+  applyReferralCode(code: string): Promise<{ success: boolean; message: string }>;
+  recordRevisionUsage(): Promise<RevisionUsageResult>;
+  getTransactionHistory(): Promise<{ diamonds: DiamondTransaction[]; energy: EnergyTransaction[] }>;
 
   // Paramètres & Préférences
   getSettings(): Promise<AppSettings>;
@@ -89,3 +111,4 @@ export interface IDataProvider {
   // Recherche Globale
   searchAll(query: string): Promise<SearchResultItem[]>;
 }
+

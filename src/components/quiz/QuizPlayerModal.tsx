@@ -26,7 +26,7 @@ export const QuizPlayerModal: React.FC<QuizPlayerModalProps> = ({
   onClose,
   onViewRevision
 }) => {
-  const { gamificationService, refreshProgress, progress } = useData();
+  const { gamificationService, refreshProgress, progress, economy, economyService, refreshEconomy } = useData();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
@@ -61,6 +61,11 @@ export const QuizPlayerModal: React.FC<QuizPlayerModalProps> = ({
     } else {
       setIsFinished(true);
       await gamificationService.recordDailyStreak();
+      const scorePct = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+      if (economyService) {
+        await economyService.rewardQuizCompletion(quiz.id, scorePct, course.title);
+        await refreshEconomy();
+      }
       await refreshProgress();
     }
   };
@@ -147,7 +152,7 @@ export const QuizPlayerModal: React.FC<QuizPlayerModalProps> = ({
               }}
             >
               <Zap size={14} fill="currentColor" />
-              <span>{progress?.energyBalance ?? 3}/3</span>
+              <span>{economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10}/{economy?.energy.maxEnergy ?? 10}</span>
             </div>
 
             <button
@@ -223,8 +228,11 @@ export const QuizPlayerModal: React.FC<QuizPlayerModalProps> = ({
               <div style={{ backgroundColor: '#FAF8F5', padding: '12px', borderRadius: '12px', border: '1px solid #F0ECE6' }}>
                 <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 600 }}>RÉCOMPENSE</span>
                 <p style={{ fontSize: '1.2rem', fontWeight: 800, color: '#F59E0B', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <Gem size={16} /> +5
+                  <Gem size={16} /> +{totalQuestions > 0 && Math.round((score / totalQuestions) * 100) >= 80 ? 5 : 2} 💎
                 </p>
+                <div style={{ fontSize: '0.68rem', color: '#94A3B8', marginTop: '2px' }}>
+                  {totalQuestions > 0 && Math.round((score / totalQuestions) * 100) >= 80 ? '+3 💎 bonus (≥ 80%)' : 'Quiz terminé'}
+                </div>
               </div>
             </div>
 

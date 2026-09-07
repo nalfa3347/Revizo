@@ -10,7 +10,10 @@ import { SettingsService } from '../services/SettingsService';
 import { SearchService } from '../services/SearchService';
 import { NotificationService } from '../services/NotificationService';
 import { AIOrchestrator } from '../services/ai/AIOrchestrator';
-import { UserProfile, UserProgress, AppNotification, AppSettings } from '../types';
+import { EconomyService } from '../services/EconomyService';
+import { MonetizationService } from '../services/MonetizationService';
+import { ReferralService } from '../services/ReferralService';
+import { UserProfile, UserProgress, AppNotification, AppSettings, EconomyState } from '../types';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 interface DataContextValue {
@@ -24,15 +27,20 @@ interface DataContextValue {
   searchService: SearchService;
   notificationService: NotificationService;
   aiOrchestrator: AIOrchestrator;
+  economyService: EconomyService;
+  monetizationService: MonetizationService;
+  referralService: ReferralService;
   profile: UserProfile | null;
   progress: UserProgress | null;
   settings: AppSettings | null;
+  economy: EconomyState | null;
   notifications: AppNotification[];
   unreadNotificationsCount: number;
   isLoading: boolean;
   refreshProgress: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
+  refreshEconomy: () => Promise<void>;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
   clearAllNotifications: () => Promise<void>;
@@ -67,12 +75,32 @@ export const DataProvider: React.FC<{
   const searchService = useMemo(() => new SearchService(dataProvider), [dataProvider]);
   const notificationService = useMemo(() => new NotificationService(dataProvider), [dataProvider]);
   const aiOrchestrator = useMemo(() => new AIOrchestrator(dataProvider), [dataProvider]);
+  const economyService = useMemo(() => new EconomyService(dataProvider), [dataProvider]);
+  const monetizationService = useMemo(() => new MonetizationService(dataProvider), [dataProvider]);
+  const referralService = useMemo(() => new ReferralService(dataProvider), [dataProvider]);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [economy, setEconomy] = useState<EconomyState | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const refreshEconomy = async () => {
+    try {
+      const e = await dataProvider.getEconomyState();
+      setEconomy(e);
+      if (progress) {
+        setProgress(prev => prev ? {
+          ...prev,
+          diamondsBalance: e.diamonds.balance,
+          energyBalance: e.energy.currentEnergy
+        } : null);
+      }
+    } catch (err) {
+      console.error('Erreur de rafraîchissement économique :', err);
+    }
+  };
 
   const refreshProgress = async () => {
     try {
@@ -127,17 +155,19 @@ export const DataProvider: React.FC<{
         if (authUser && dataProvider.setActiveProfile) {
           dataProvider.setActiveProfile(authUser);
         }
-        const [prof, prog, stgs, notifs] = await Promise.all([
+        const [prof, prog, stgs, notifs, econ] = await Promise.all([
           dataProvider.getProfile(),
           dataProvider.getProgress(),
           settingsService.getSettings(),
-          dataProvider.getNotifications()
+          dataProvider.getNotifications(),
+          dataProvider.getEconomyState().catch(() => null)
         ]);
         if (mounted) {
           setProfile(authUser || prof);
           setProgress(prog);
           setSettings(stgs);
           setNotifications(notifs);
+          if (econ) setEconomy(econ);
         }
       } catch (err) {
         console.error('Erreur d’initialisation du profil :', err);
@@ -205,15 +235,20 @@ export const DataProvider: React.FC<{
     searchService,
     notificationService,
     aiOrchestrator,
+    economyService,
+    monetizationService,
+    referralService,
     profile,
     progress,
     settings,
+    economy,
     notifications,
     unreadNotificationsCount,
     isLoading,
     refreshProgress,
     refreshProfile,
     refreshNotifications,
+    refreshEconomy,
     markNotificationAsRead,
     markAllNotificationsAsRead,
     clearAllNotifications,

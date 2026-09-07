@@ -17,7 +17,14 @@ import {
   QuizAttempt,
   ComprehensionQuestion,
   Exercise,
-  QuizPlan
+  QuizPlan,
+  SubscriptionPlan,
+  EconomyState,
+  EnergyConversionResult,
+  RewardClaimResult,
+  RevisionUsageResult,
+  DiamondTransaction,
+  EnergyTransaction
 } from '../../types';
 import { UserRepository } from '../../repositories/UserRepository';
 import { CourseRepository } from '../../repositories/CourseRepository';
@@ -27,6 +34,7 @@ import { ProgressRepository } from '../../repositories/ProgressRepository';
 import { NotificationRepository } from '../../repositories/NotificationRepository';
 import { SettingsRepository } from '../../repositories/SettingsRepository';
 import { ExerciseRepository } from '../../repositories/ExerciseRepository';
+import { EconomyRepository } from '../../repositories/EconomyRepository';
 
 /**
  * REVIZO — SupabaseDataProvider
@@ -42,6 +50,7 @@ export class SupabaseDataProvider implements IDataProvider {
   private notifRepo: NotificationRepository;
   private settingsRepo: SettingsRepository;
   private exerciseRepo: ExerciseRepository;
+  private economyRepo: EconomyRepository;
 
   private currentUserId: string = '';
   private activeSessions: Map<string, QuizSession> = new Map();
@@ -56,6 +65,7 @@ export class SupabaseDataProvider implements IDataProvider {
     this.notifRepo = new NotificationRepository(client);
     this.settingsRepo = new SettingsRepository(client);
     this.exerciseRepo = new ExerciseRepository(client);
+    this.economyRepo = new EconomyRepository(client);
 
     if (initialUser) {
       this.currentUserId = initialUser.id;
@@ -635,5 +645,84 @@ export class SupabaseDataProvider implements IDataProvider {
     });
 
     return results;
+  }
+
+  // ----------------------------------------------------
+  // 10. ÉCONOMIE, ABONNEMENTS, ÉNERGIE & PARRAINAGE
+  // ----------------------------------------------------
+  async getEconomyState(): Promise<EconomyState> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.getEconomyState(this.currentUserId);
+  }
+
+  async activateSubscription(plan: SubscriptionPlan, paymentProvider?: string, externalId?: string): Promise<EconomyState> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.activateSubscription(this.currentUserId, plan, paymentProvider, externalId);
+  }
+
+  async createCheckoutSession(
+    plan: SubscriptionPlan,
+    customer?: { firstname?: string; lastname?: string; email?: string; phone?: string },
+    returnUrl?: string
+  ): Promise<{ success: boolean; checkoutUrl?: string; token?: string; transactionId?: string; simulated?: boolean; message?: string }> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.createCheckoutSession(this.currentUserId, plan, customer, returnUrl);
+  }
+
+  async consumeEnergy(amount: number = 1, reason: string = 'Session pédagogique', referenceId?: string): Promise<{ success: boolean; currentEnergy: number; maxEnergy: number; message?: string }> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.consumeEnergy(this.currentUserId, amount, reason, referenceId);
+  }
+
+  async convertDiamondsToEnergy(): Promise<EnergyConversionResult> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.convertDiamondsToEnergy(this.currentUserId);
+  }
+
+  async claimReward(eventKey: string, rewardType: string, diamonds: number, reason: string, metadata?: any): Promise<RewardClaimResult> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.claimReward(this.currentUserId, eventKey, rewardType, diamonds, reason, metadata);
+  }
+
+  async applyReferralCode(code: string): Promise<{ success: boolean; message: string }> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.applyReferralCode(this.currentUserId, code);
+  }
+
+  async recordRevisionUsage(): Promise<RevisionUsageResult> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.recordRevisionUsage(this.currentUserId);
+  }
+
+  async getTransactionHistory(): Promise<{ diamonds: DiamondTransaction[]; energy: EnergyTransaction[] }> {
+    if (!this.currentUserId) {
+      const { data: { user } } = await this.client.auth.getUser();
+      if (user) this.currentUserId = user.id;
+    }
+    return this.economyRepo.getTransactionHistory(this.currentUserId);
   }
 }

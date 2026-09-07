@@ -357,3 +357,184 @@ export interface AppSettings {
   notificationsDailyReminders: boolean;
   notificationsRewards: boolean;
 }
+
+// ==============================================================================
+// SYSTÈME ÉCONOMIQUE, ABONNEMENTS, ÉNERGIE, DIAMANTS & PARRAINAGE
+// ==============================================================================
+
+export type SubscriptionPlan = 'free' | 'essentiel' | 'intensif' | 'premium';
+export type SubscriptionStatus = 'free' | 'active' | 'expired' | 'cancelled' | 'past_due';
+
+export interface PlanDetails {
+  id: SubscriptionPlan;
+  name: string;
+  priceFcfa: number;
+  dailyRevisionLimit: number;
+  maxEnergy: number;
+  initialDiamonds: number;
+  badge?: string;
+  isPopular?: boolean;
+  features: string[];
+}
+
+export interface UserSubscription {
+  id?: string;
+  userId: string;
+  plan: SubscriptionPlan;
+  price: number;
+  status: SubscriptionStatus;
+  startedAt: string;
+  expiresAt?: string | null;
+  paymentProvider?: string;
+  externalSubscriptionId?: string;
+  dailyRevisionLimit: number;
+  dailyRevisionUsed?: number;
+}
+
+export interface UserEnergyState {
+  currentEnergy: number;
+  maxEnergy: number;
+  dailyRevisionLimit: number;
+  dailyRevisionUsed: number;
+  dailyRevisionRemaining: number;
+  diamondsConvertedToday: number;
+  maxDailyDiamondConversions: number;
+  dailyRefillsUsed?: number;
+}
+
+export interface UserDiamondsState {
+  balance: number;
+  lifetimeEarned?: number;
+}
+
+export interface ReferralInfo {
+  referralCode: string;
+  referredByUserId?: string | null;
+  referralStatus: 'none' | 'pending' | 'rewarded';
+  totalReferrals: number;
+  rewardedReferrals: number;
+  referralsCount?: number;
+  rewardsEarnedCount?: number;
+}
+
+export interface EconomyState {
+  subscription: UserSubscription;
+  energy: UserEnergyState;
+  diamonds: UserDiamondsState;
+  referral: ReferralInfo;
+}
+
+export interface DiamondTransaction {
+  id: string;
+  userId: string;
+  amount: number;
+  balanceAfter: number;
+  reason: string;
+  referenceId?: string;
+  createdAt: string;
+}
+
+export interface EnergyTransaction {
+  id: string;
+  userId: string;
+  amount: number;
+  balanceAfter: number;
+  reason: string;
+  referenceId?: string;
+  createdAt: string;
+}
+
+export interface RewardClaimResult {
+  success: boolean;
+  alreadyClaimed: boolean;
+  diamondsAwarded: number;
+  currentDiamonds: number;
+  message?: string;
+}
+
+export interface EnergyConversionResult {
+  success: boolean;
+  currentDiamonds: number;
+  currentEnergy: number;
+  maxEnergy: number;
+  convertedToday: number;
+  error?: string;
+  message?: string;
+}
+
+export interface RevisionUsageResult {
+  allowed: boolean;
+  limit: number;
+  used: number;
+  remaining: number;
+  error?: string;
+  message?: string;
+}
+
+export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanDetails> = {
+  free: {
+    id: 'free',
+    name: 'Free',
+    priceFcfa: 0,
+    dailyRevisionLimit: 1,
+    maxEnergy: 3,
+    initialDiamonds: 10,
+    features: [
+      '1 révision intelligente par jour',
+      '3 énergies ⚡ max',
+      'Accès aux quiz essentiels',
+      'Téléchargement PDF des fiches'
+    ]
+  },
+  essentiel: {
+    id: 'essentiel',
+    name: 'Essentiel',
+    priceFcfa: 1000,
+    dailyRevisionLimit: 3,
+    maxEnergy: 10,
+    initialDiamonds: 10,
+    features: [
+      '3 révisions intelligentes par jour',
+      '10 énergies ⚡ max',
+      '10 diamants 💎 de bienvenue',
+      'Génération complète de quiz & exercices',
+      'Accès prioritaire à l\'analyse Gemini'
+    ]
+  },
+  intensif: {
+    id: 'intensif',
+    name: 'Intensif',
+    priceFcfa: 3000,
+    dailyRevisionLimit: 10,
+    maxEnergy: 20,
+    initialDiamonds: 30,
+    isPopular: true,
+    badge: 'Le plus populaire',
+    features: [
+      '10 révisions intelligentes par jour',
+      '20 énergies ⚡ max',
+      '30 diamants 💎 de bienvenue',
+      'Idéal pour préparer les examens et brevets',
+      'Quiz de révision espacée illimités',
+      'Support prioritaire'
+    ]
+  },
+  premium: {
+    id: 'premium',
+    name: 'Premium',
+    priceFcfa: 5000,
+    dailyRevisionLimit: 20,
+    maxEnergy: 30,
+    initialDiamonds: 60,
+    badge: 'Expérience complète',
+    features: [
+      '20 révisions intelligentes par jour',
+      '30 énergies ⚡ max',
+      '60 diamants 💎 de bienvenue',
+      'L\'expérience d\'apprentissage ultime',
+      'Toutes les matières sans compromis',
+      'Analyses documentaires approfondies'
+    ]
+  }
+};
+

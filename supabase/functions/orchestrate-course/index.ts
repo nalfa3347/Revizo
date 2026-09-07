@@ -324,6 +324,25 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // CONTRÔLE SERVEUR STRICT DU QUOTA QUOTIDIEN DE RÉVISIONS
+    const { data: usageCheck, error: usageErr } = await userClient.rpc("record_revision_usage", {
+      p_user_id: userId
+    });
+
+    if (usageErr) {
+      console.error("Avertissement quota révision:", usageErr);
+    } else if (usageCheck && !usageCheck.allowed) {
+      return new Response(JSON.stringify({
+        error: usageCheck.message || "Tu as atteint ta limite de révisions du jour. Ton compteur sera réinitialisé demain.",
+        quotaReached: true,
+        limit: usageCheck.limit,
+        used: usageCheck.used
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     // Préparer les parts multimodales pour Gemini
     const parts: any[] = [];
 

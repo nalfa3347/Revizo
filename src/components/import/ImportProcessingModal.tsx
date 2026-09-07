@@ -17,6 +17,7 @@ interface ImportProcessingModalProps {
   onClose: () => void;
   onViewRevision: (course: Course, revision: Revision) => void;
   onStartQuiz: (course: Course, quiz: Quiz) => void;
+  onNavigateToSubscription?: () => void;
 }
 
 export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
@@ -25,7 +26,8 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
   fileName,
   onClose,
   onViewRevision,
-  onStartQuiz
+  onStartQuiz,
+  onNavigateToSubscription
 }) => {
   if (!progress && !result) return null;
 
@@ -362,21 +364,62 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
               {progress?.message || 'Nous n’avons pas pu lire le contenu de ce document. Assure-toi que le fichier est un PDF ou une photo lisible.'}
             </p>
 
-            <button
-              style={{
-                backgroundColor: '#C47D2B',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '10px 20px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-              onClick={onClose}
-            >
-              Réessayer
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {progress?.message?.includes('limite de révisions') && onNavigateToSubscription ? (
+                <>
+                  <button
+                    style={{
+                      backgroundColor: '#EA580C',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '10px 20px',
+                      fontSize: '0.9rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(234, 88, 12, 0.25)'
+                    }}
+                    onClick={() => {
+                      onClose();
+                      onNavigateToSubscription();
+                    }}
+                  >
+                    Voir les abonnements
+                  </button>
+                  <button
+                    style={{
+                      backgroundColor: '#F3F4F6',
+                      color: '#4B5563',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '10px 18px',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                    onClick={onClose}
+                  >
+                    Fermer
+                  </button>
+                </>
+              ) : (
+                <button
+                  style={{
+                    backgroundColor: '#C47D2B',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '10px 20px',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                  onClick={onClose}
+                >
+                  Réessayer
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

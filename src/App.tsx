@@ -12,6 +12,9 @@ import { ProfileView } from './components/profile/ProfileView';
 import { SettingsView } from './components/settings/SettingsView';
 import { SearchView } from './components/search/SearchView';
 import { NotificationsView } from './components/notifications/NotificationsView';
+import { DiamondsView } from './components/economy/DiamondsView';
+import { SubscriptionView } from './components/economy/SubscriptionView';
+import { ReferralView } from './components/economy/ReferralView';
 import { Course, SearchResultItem, AppNotification } from './types';
 
 interface MainAppContentProps {
@@ -55,7 +58,7 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
     }
     setSelectedCourse(null);
     setQuizSelectedCourse(null);
-    const overlayTabs: TabKey[] = ['profile', 'search', 'notifications', 'settings'];
+    const overlayTabs: TabKey[] = ['profile', 'search', 'notifications', 'settings', 'diamonds', 'subscription', 'referral'];
     if (overlayTabs.includes(tab) && !overlayTabs.includes(currentTab)) {
       setPreviousTab(currentTab);
     }
@@ -138,6 +141,15 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
       onBackFromNotifications={() => {
         setCurrentTab(previousTab || 'home');
       }}
+      onBackFromDiamonds={() => {
+        setCurrentTab(previousTab || 'home');
+      }}
+      onBackFromSubscription={() => {
+        setCurrentTab(previousTab || 'home');
+      }}
+      onBackFromReferral={() => {
+        setCurrentTab(previousTab || 'home');
+      }}
     >
       {/* 1. ACCUEIL — FIDÈLE AUX RÉFÉRENCES VISUELLES (Desktop & Mobile) */}
       {currentTab === 'home' && (
@@ -146,6 +158,8 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
           onStartRevision={() => {
             if (courses.length > 0) {
               handleOpenRevision(courses[0]);
+            } else {
+              setCurrentTab('revisions');
             }
           }}
         />
@@ -159,6 +173,7 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
             setCurrentTab('courses');
           }}
           onStartQuiz={handleStartQuiz}
+          onNavigateToSubscription={() => setCurrentTab('subscription')}
           onReadingChange={isReading => {
             setIsReadingRevision(isReading);
             if (!isReading) {
@@ -198,12 +213,15 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
         />
       )}
 
-      {/* 5. PROFIL — EXPÉRIENCE COMPLÈTE (Identité, Progression, Objectifs, Paramètres, Déconnexion) */}
+      {/* 5. PROFIL — EXPÉRIENCE COMPLÈTE (Identité, Progression, Objectifs, Monnaie & Abonnement, Paramètres, Déconnexion) */}
       {currentTab === 'profile' && (
         <ProfileView
           onBack={() => setCurrentTab(previousTab || 'home')}
           onNavigateToNotifications={() => setCurrentTab('notifications')}
           onNavigateToSettings={() => setCurrentTab('settings')}
+          onNavigateToDiamonds={() => setCurrentTab('diamonds')}
+          onNavigateToSubscription={() => setCurrentTab('subscription')}
+          onNavigateToReferral={() => setCurrentTab('referral')}
           onLogoutSuccess={async () => {
             await onLogout();
           }}
@@ -234,6 +252,29 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
         <NotificationsView
           onBack={() => setCurrentTab(previousTab || 'home')}
           onNavigateToContent={handleNotificationNavigation}
+        />
+      )}
+
+      {/* 8. MES DIAMANTS & ÉNERGIE */}
+      {currentTab === 'diamonds' && (
+        <DiamondsView
+          onBack={() => setCurrentTab(previousTab || 'home')}
+          onNavigateToSubscription={() => setCurrentTab('subscription')}
+          onNavigateToReferral={() => setCurrentTab('referral')}
+        />
+      )}
+
+      {/* 9. ABONNEMENT REVIZO */}
+      {currentTab === 'subscription' && (
+        <SubscriptionView
+          onBack={() => setCurrentTab(previousTab || 'home')}
+        />
+      )}
+
+      {/* 10. INVITE TES AMIS (PARRAINAGE) */}
+      {currentTab === 'referral' && (
+        <ReferralView
+          onBack={() => setCurrentTab(previousTab || 'home')}
         />
       )}
     </AppShell>

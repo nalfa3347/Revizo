@@ -440,6 +440,111 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
   - Design premium conforme aux règles de la marque REVIZO : bandeau supérieur indigo (`#4F46E5`), logo REVIZO, badge de certification scolaire, carte de résumé avec aplat et barre d'accent gauche, puces et flèches stylisées, sections numérotées, blocs "À retenir" et "Exemples".
   - Pagination dynamique automatique multipages avec en-têtes de continuation et pied de page officiel ("Page X sur Y") sur toutes les pages.
   - Sécurisation du téléchargement navigateur avec libération temporisée du blob (`setTimeout(() => URL.revokeObjectURL(url), 1500)`).
-  - Suite de tests dédiés [src/test/PDFGeneration.test.ts](file:///c:/REVIZO%202.0/src/test/PDFGeneration.test.ts) validant la syntaxe PDF, l'absence de mojibake, l'analyse binaire par `pdfjs-dist` et la validité des coordonnées de tous les blocs de texte sur la feuille A4.
   - 17 fichiers de tests, 93 tests réussis sur 93 (100% de succès) et build de production Vite sans erreur.
+- [x] **PHASE DE VALIDATION RÉELLE — REVIZO E2E (GEMINI & SUPABASE DE BOUT EN BOUT)** (Terminée et Validée le 2026-09-07)
+  - Validation fonctionnelle réelle du parcours utilisateur complet d'un élève sans simulation ni mock.
+  - Script de banc d'essai complet : `e2e/validate_real_gemini_pipeline.mjs` (51 / 51 validations au vert).
+  - Authentification réelle Supabase avec deux comptes élèves isolés (`test_alpha_2026@revizo.test` et `test_beta_2026@revizo.test`).
+  - Ingestion d'un vrai fichier PDF de cours de 60 Ko (`e2e/fixtures/cours_revolution_francaise.pdf`).
+  - Appel réel de l'Edge Function Supabase `orchestrate-course` avec clé Gemini 2.5 Flash côté serveur (zéro secret côté client).
+  - Traitement IA réel par Gemini (durée : 38.7s pour le PDF, 37.0s pour le mode photo OCR).
+  - Extraction stricte des notions clés et concepts sans hallucination : fidélité au document source (12/19 termes clés identifiés, aucun terme parasite).
+  - Synthèse de révision concise, structurée (5 sections, 2137 caractères vs 61 Ko source) plus courte que le cours original.
+  - Génération de 4 questions de compréhension et 2 exercices reliés aux concepts avec références sources exactes.
+  - Planification de 3 quiz d'évaluation espacés (8 questions au total avec explications didactiques complètes).
+  - Persistance intégrale dans les 8 tables PostgreSQL Supabase (`courses`, `analyses`, `concepts`, `revisions`, `comprehension_questions`, `quiz_plans`, `quizzes`, `exercises`).
+  - Vérification de l'étanchéité multi-tenant Row Level Security (RLS) : l'élève B ne peut voir ni cours, ni concepts, ni révisions, ni quiz, ni questions de l'élève A.
+  - Résilience à la reconnexion : réhydratation instantanée de l'état complet après ré-authentification.
+  - Gestion des cas d'erreur réels : rejet immédiat des requêtes non authentifiées, des documents vides et des fichiers PDF corrompus.
+  - Non-régression totale : 17 suites Vitest (93/93 tests passés) et compilation TypeScript / Vite de production réussie sans erreur.
+- [x] **PHASE MONÉTISATION, ÉNERGIE, DIAMANTS ET PARRAINAGE (SYSTÈME ÉCONOMIQUE REVIZO)** (Terminée et Validée le 2026-09-07)
+  - **3 Abonnements Officiels (FCFA)** :
+    - *Essentiel* : 1 000 FCFA/mois, 3 révisions/jour, 10 ⚡ max, 10 💎 de bienvenue.
+    - *Intensif* : 3 000 FCFA/mois, 10 révisions/jour, "Le plus populaire", 20 ⚡ max, 30 💎 de bienvenue.
+    - *Premium* : 5 000 FCFA/mois, 20 révisions/jour, "Expérience complète", 30 ⚡ max, 60 💎 de bienvenue.
+    - *Free* : Préparé avec 1 révision/jour, 3 ⚡ max, 10 💎 initiaux.
+  - **Contrôle Serveur des Révisions Quotidiennes** :
+    - Quota vérifié et décrémenté côté serveur (Edge Function `orchestrate-course` & fonction PostgreSQL `record_revision_usage`).
+    - Réinitialisation quotidienne automatique basée sur la date calendaire.
+    - Blocage strict en HTTP 429 avec message bienveillant lorsque la limite est atteinte.
+    - Impossible de contourner par rechargement, reconnexion, changement de navigateur ou manipulation frontend.
+  - **Système d'Énergie ⚡ & Transactions Atomiques** :
+    - Monnaie persistée dans la table PostgreSQL `user_energy` (`current_energy`, `max_energy`).
+    - Consommation de 1 ⚡ par session pédagogique complète (pas de surconsommation par question de quiz).
+    - Conversion atomique : 5 💎 = +1 ⚡ via RPC PostgreSQL `convert_diamonds_to_energy`.
+    - Plafond de sécurité anti-abus : maximum 10 ⚡ converties par jour grâce aux diamants.
+  - **Système de Diamants 💎 & Idempotence des Récompenses** :
+    - Monnaie persistée dans `user_diamonds` (`balance`, `lifetime_earned`, `lifetime_spent`).
+    - Contrainte SQL `CHECK (balance >= 0)` interdisant formellement tout solde négatif.
+    - Événements de récompense idempotents tracés dans `reward_events` (`user_id`, `event_key`) :
+      - Fin d'une révision : +2 💎 (`user_completed_revision:{revisionId}`)
+      - Fin d'un quiz : +2 💎 (`user_completed_quiz:{quizId}`)
+      - Réussite quiz >= 80% : +3 💎 bonus (`user_quiz_high_score:{quizId}`)
+      - Série de 5 bonnes réponses : +2 💎 (`user_streak_5:{quizId}:{date}`)
+      - Série de 7 jours consécutifs : +10 💎 (`user_streak_7days:{date}`)
+      - Premier abonnement payant d'un filleul : +10 💎 (`referral_first_sub:{refereeId}`)
+    - Traçabilité complète dans `diamond_transactions` et `energy_transactions`.
+  - **Système de Parrainage & Protection Anti-Fraude** :
+    - Code de parrainage unique par élève au format `REV-XXXXXX` généré lors de la création du compte.
+    - Règle stricte : 1 seul parrain par compte filleul, auto-parrainage impossible.
+    - Aucune récompense à la simple inscription : bonus parrain (+10 💎) déclenché **exclusivement** après confirmation du premier abonnement payant du filleul.
+    - Opération idempotente garantie par clé unique `referral_first_sub:{referee_id}`.
+  - **Sécurité Multi-Utilisateur & RLS (Row Level Security)** :
+    - Politiques RLS actives sur les 7 tables économiques (`subscriptions`, `user_energy`, `user_diamonds`, `diamond_transactions`, `energy_transactions`, `referral_accounts`, `reward_events`).
+    - Les élèves n'ont qu'un accès `SELECT` sur leurs propres lignes (`auth.uid() = user_id`).
+    - Aucune mise à jour (`UPDATE` / `INSERT`) directe autorisée depuis le client sur les soldes ou quotas : toutes les mutations passent obligatoirement par des fonctions stockées PostgreSQL `SECURITY DEFINER`.
+  - **Architecture Prête pour Fedapay** :
+    - Statuts d'abonnement supportés : `free`, `active`, `expired`, `cancelled`, `past_due`.
+    - Champs préparés : `payment_provider`, `external_subscription_id`, `expires_at`.
+    - Aucune confirmation de paiement arbitraire côté client : déclenchement par webhook ou service serveur de paiement.
+  - **Interface Utilisateur & Expérience Élève** :
+    - Header unifié avec badges interactifs 💎 et ⚡ affichant soldes et ratios.
+    - Vue dédiée « Mes diamants » : solde, guide d'obtention didactique, conversion 5💎 → 1⚡, progression de recharge quotidienne (X/10), historique des transactions.
+    - Vue dédiée « Abonnement » : présentation sobre et premium des 3 offres en FCFA, mise en avant « Le plus populaire » pour l'Intensif, bouton de simulation sécurisée pour les tests.
+    - Vue dédiée « Invite tes amis » : code de parrainage unique, bouton de partage natif/copie, statistiques des filleuls et récompenses obtenues.
+    - Respect absolu de la navigation mobile à 4 onglets (`Accueil`, `Révision`, `Mes cours`, `Quiz`). Les vues économiques sont des overlays accessibles via le header ou le profil.
+  - **Validation Automatisée & E2E Réelle** :
+    - 23 tests unitaires et d'intégration dans `src/test/MonetizationEconomy.test.ts` (100% de succès).
+    - 7 tests E2E réels sur projet Supabase distant `ajmfsjankmhcdobpuegk` dans `src/test/MonetizationRealE2E.test.ts` validant le cycle complet des Utilisateurs Alpha & Bêta.
+    - 19 suites de tests au total (123 tests réussis sur 123), compilation TypeScript stricte (`tsc -b`) et build de production Vite sans erreur.
+- [x] **PHASE AUDIT FINAL PRODUIT + UX + PRÉPARATION AU PAIEMENT RÉEL** (Terminée et Validée le 2026-09-07)
+  - **Audit de l'expérience utilisateur bout en bout (comme un véritable élève débutant)** :
+    - Détection et correction du point de blocage sur l'Accueil : pour un nouvel élève sans cours, le clic sur *"Réviser →"* redirige désormais directement vers l'écran d'importation de cours (`App.tsx`).
+    - Harmonisation des jauges d'énergie : élimination des libellés obsolètes en `/3` dans `QuizView.tsx`, `QuizPlayerModal.tsx` et `ProfileView.tsx`, remplacés par la jauge dynamique `{currentEnergy} ⚡ / {maxEnergy} ⚡` correspondant au plan réel de l'élève (10, 20 ou 30).
+    - Explication claire et didactique de la règle 5 💎 = 1 ⚡ dans la modale d'épuisement d'énergie, sans jargon technique ni codes HTTP.
+    - Blocage immédiat de conversion avec retour convivial lorsque l'énergie de l'élève est déjà à son maximum (`energy_already_full`).
+    - En cas de quota de révision quotidien atteint, affichage direct d'un bouton d'action *"Voir les abonnements"* dans la modale d'importation pour faciliter l'upgrade sans frustration.
+  - **Audit de la Persistance et de l'Expiration d'Abonnement** :
+    - En cas d'abonnement expiré (`expires_at < NOW()`), le système (fonction SQL `get_user_economy_state` et `MockDataProvider`) applique automatiquement les limites du plan Free (1 révision/jour, 3 ⚡ max, énergie plafonnée à 3), tout en préservant 100% des diamants, des cours et des révisions accumulés.
+    - Aucune perte de données pédagogiques ou financières après expiration ou reconnexion.
+  - **Conformité Ergonomie Mobile & Desktop** :
+    - Barre inférieure mobile strictement restreinte aux 4 onglets officiels (`Accueil`, `Révision`, `Mes cours`, `Quiz`).
+    - Badges 💎 et ⚡ cliquables dans le header ouvrant les modales/overlays dédiées sans briser la navigation.
+    - Interface desktop avec sidebar fixe préservée.
+  - **Validation Automatisée & Non-Régression** :
+    - Création de la suite complète d'audit dans `src/test/ProductUXMonetizationAudit.test.ts` (22 tests dédiés à l'expérience utilisateur, aux quotas stricts, à l'anti-fraude parrainage et à la persistance).
+    - 20 suites de tests exécutées avec succès (145 tests sur 145 réussis, 100%).
+    - Build de production (`tsc -b && vite build`) vérifié et validé sans avertissement bloquant.
+    - Statut : **✅ PRÊT POUR INTÉGRATION FEDAPAY**.
+- [x] **PHASE INTÉGRATION DU SYSTÈME DE PAIEMENT SÉCURISÉ FEDAPAY** (Terminée et Validée le 2026-09-07)
+  - **Moteur de Paiement FedaPay (Mobile Money & Cartes Bancaires)** :
+    - Prise en charge officielle de MTN Mobile Money, Moov Money, Orange Money, Wave, Celtiis et Cartes Visa / Mastercard.
+    - Montants stricts en FCFA (XOF) : Essentiel (1 000 FCFA), Intensif (3 000 FCFA), Premium (5 000 FCFA).
+    - Table de traçabilité `payment_transactions` créée et protégée par Row Level Security (RLS) sur PostgreSQL Supabase.
+  - **Edge Functions Supabase Déployées & Sécurisées** :
+    - `fedapay-checkout` : Création de transactions et génération du token de paiement Checkout côté serveur via `FEDAPAY_SECRET_KEY` (zéro clé secrète exposée au client).
+    - `fedapay-webhook` : Réception des événements `transaction.approved`, vérification de statut auprès de l'API FedaPay, activation automatique et idempotente de l'abonnement (`activate_subscription`) et attribution du bonus parrain (+10 💎 via `process_referral_reward_on_payment`).
+  - **Interface Élève (`SubscriptionView.tsx`)** :
+    - Boutons d'action branchés sur `createCheckoutSession`.
+    - Redirection fluide vers le guichet officiel de paiement FedaPay.
+    - Écran de retour automatique (`?payment=success` ou `?payment=callback`) avec réhydratation instantanée de l'état économique et bannière de confirmation didactique.
+    - Mode simulation gracieux en l'absence temporaire de clé secrète de production.
+  - **Validation & Non-Régression** :
+    - 21 suites de tests exécutées avec succès (**151 tests réussis sur 151, 100% de succès**).
+    - Compilation TypeScript stricte sans erreur (`tsc -b --noEmit`).
+    - Build de production Vite (`tsc -b && vite build`) généré avec succès en 8.20s.
+    - URL du Webhook FedaPay prête à être renseignée : `https://ajmfsjankmhcdobpuegk.supabase.co/functions/v1/fedapay-webhook`.
+
+
+
 

@@ -26,6 +26,9 @@ interface ProfileViewProps {
   onBack?: () => void;
   onNavigateToNotifications?: () => void;
   onNavigateToSettings?: () => void;
+  onNavigateToDiamonds?: () => void;
+  onNavigateToSubscription?: () => void;
+  onNavigateToReferral?: () => void;
   onLogoutSuccess?: () => void;
 }
 
@@ -33,11 +36,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onBack,
   onNavigateToNotifications,
   onNavigateToSettings,
+  onNavigateToDiamonds,
+  onNavigateToSubscription,
+  onNavigateToReferral,
   onLogoutSuccess
 }) => {
   const {
     profile,
     progress,
+    economy,
     userService,
     updateProfile,
     isLoading: contextLoading
@@ -290,7 +297,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {progress.diamondsBalance} 💎
               </div>
               <div className="profile-stat-subtext">
-                3 énergies actives pour les quiz
+                {economy?.energy.currentEnergy ?? 10} ⚡ / {economy?.energy.maxEnergy ?? 10} ⚡ disponibles
               </div>
             </div>
 
@@ -385,7 +392,80 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         )}
       </div>
 
-      {/* 4. SECTION « COMPTE & PRÉFÉRENCES » */}
+      {/* 4. SECTION « MONNAIE & ABONNEMENT » */}
+      <div className="profile-section">
+        <h3 className="profile-section-title">
+          <Gem size={18} color="#D97706" />
+          <span>Monnaie & Abonnement</span>
+        </h3>
+        <p className="profile-section-subtitle">
+          Gérer ton abonnement mensuel, tes recharges d’énergie et tes récompenses.
+        </p>
+
+        <div className="card-white profile-menu-card">
+          {/* Action 1 : Mon Abonnement */}
+          <button
+            className="profile-menu-item"
+            onClick={onNavigateToSubscription}
+            id="btn-profile-subscription"
+          >
+            <div className="profile-menu-item-left">
+              <div className="profile-menu-icon-box" style={{ background: '#FFF3E8', color: '#EA580C' }}>
+                <Sparkles size={18} />
+              </div>
+              <div className="profile-menu-texts">
+                <span className="profile-menu-label">Mon Abonnement</span>
+                <span className="profile-menu-caption">
+                  {economy?.subscription.plan ? `Plan ${economy.subscription.plan.toUpperCase()}` : 'Plan GRATUIT'} • {economy?.subscription.dailyRevisionLimit ?? 3} révisions/jour
+                </span>
+              </div>
+            </div>
+            <ChevronRight size={18} color="var(--text-muted)" />
+          </button>
+
+          {/* Action 2 : Mes Diamants & Énergie */}
+          <button
+            className="profile-menu-item"
+            onClick={onNavigateToDiamonds}
+            id="btn-profile-diamonds"
+          >
+            <div className="profile-menu-item-left">
+              <div className="profile-menu-icon-box" style={{ background: '#FEF3C7', color: '#D97706' }}>
+                <Gem size={18} />
+              </div>
+              <div className="profile-menu-texts">
+                <span className="profile-menu-label">Mes Diamants & Énergie</span>
+                <span className="profile-menu-caption">
+                  {economy?.diamonds.balance ?? progress?.diamondsBalance ?? 0} 💎 • {economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10} ⚡ disponibles
+                </span>
+              </div>
+            </div>
+            <ChevronRight size={18} color="var(--text-muted)" />
+          </button>
+
+          {/* Action 3 : Inviter mes amis (Parrainage) */}
+          <button
+            className="profile-menu-item"
+            onClick={onNavigateToReferral}
+            id="btn-profile-referral"
+          >
+            <div className="profile-menu-item-left">
+              <div className="profile-menu-icon-box" style={{ background: '#EFF6FF', color: '#2563EB' }}>
+                <Award size={18} />
+              </div>
+              <div className="profile-menu-texts">
+                <span className="profile-menu-label">Inviter mes amis (Parrainage)</span>
+                <span className="profile-menu-caption">
+                  Code {economy?.referral.referralCode || 'REV-REVIZO'} • Gagne +10 💎 par ami
+                </span>
+              </div>
+            </div>
+            <ChevronRight size={18} color="var(--text-muted)" />
+          </button>
+        </div>
+      </div>
+
+      {/* 5. SECTION « COMPTE & PRÉFÉRENCES » */}
       <div className="profile-section">
         <h3 className="profile-section-title">
           <Settings size={18} color="#EA580C" />
