@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthView } from './components/auth/AuthView';
+import { LandingPage } from './components/landing/LandingPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { AppShell, TabKey } from './components/layout/AppShell';
 import { HomeView } from './components/home/HomeView';
@@ -283,6 +284,7 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
 
 const AppRoot: React.FC = () => {
   const { user, isAuthenticated, isLoading, signOut } = useAuth();
+  const [authRequestedMode, setAuthRequestedMode] = useState<'login' | 'signup' | null>(null);
 
   if (isLoading) {
     return (
@@ -300,7 +302,19 @@ const AppRoot: React.FC = () => {
   }
 
   if (!isAuthenticated || !user) {
-    return <AuthView />;
+    if (authRequestedMode) {
+      return (
+        <AuthView
+          initialMode={authRequestedMode}
+          onBack={() => setAuthRequestedMode(null)}
+        />
+      );
+    }
+    return (
+      <LandingPage
+        onOpenAuth={(mode) => setAuthRequestedMode(mode)}
+      />
+    );
   }
 
   return (

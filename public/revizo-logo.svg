@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
-  <rect width="48" height="48" rx="12" fill="#4F46E5"/>
+  <defs>
+    <linearGradient id="revizoOrangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EA580C"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="url(#revizoOrangeGrad)"/>
   <path d="M14 14H34V20C34 23.3137 31.3137 26 28 26H20C16.6863 26 14 28.6863 14 32V34H34" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="34" cy="34" r="3" fill="#38BDF8"/>
-  <circle cx="14" cy="14" r="3" fill="#FBBF24"/>
+  <circle cx="34" cy="34" r="3" fill="#FEF08A"/>
+  <circle cx="14" cy="14" r="3" fill="#FFFFFF"/>
 </svg>

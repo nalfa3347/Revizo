@@ -7,6 +7,7 @@ import {
   EyeOff,
   User,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   Sparkles,
   AlertCircle,
@@ -20,14 +21,21 @@ import { SchoolLevel } from '../../types';
 
 interface AuthViewProps {
   onSuccess?: () => void;
+  onBack?: () => void;
+  initialMode?: 'login' | 'signup';
 }
 
-export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
+export const AuthView: React.FC<AuthViewProps> = ({
+  onSuccess,
+  onBack,
+  initialMode = 'login'
+}) => {
   const { signIn, signUp, completeAuth, checkIdentifier } = useAuth();
   const isMockMode = getActiveProviderType() === 'mock';
 
   // Mode principal : 'login' | 'signup' | 'onboarding'
-  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'onboarding'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'onboarding'>(initialMode);
+
   const [createdUser, setCreatedUser] = useState<any>(null);
 
   // --- ÉTAT CONNEXION ---
@@ -212,6 +220,31 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        {onBack && authMode !== 'onboarding' && (
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              alignSelf: 'flex-start',
+              background: 'transparent',
+              border: 'none',
+              color: '#64748B',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              marginBottom: '12px',
+              transition: 'color 0.15s ease'
+            }}
+          >
+            <ArrowLeft size={16} />
+            <span>Retour au site</span>
+          </button>
+        )}
         {/* LOGO & EN-TÊTE DE MARQUE */}
         <div className="auth-brand-header">
           <div className="auth-logo">
@@ -219,6 +252,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
               REVIZO<span className="brand-sparkle">✦</span>
             </span>
           </div>
+
           {authMode === 'login' && (
             <>
               <h1 className="auth-title">Heureux de te revoir !</h1>

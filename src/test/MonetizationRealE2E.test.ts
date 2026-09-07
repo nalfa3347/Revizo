@@ -51,10 +51,11 @@ describe('REVIZO — Test E2E Réel Supabase (Parcours Utilisateur A & B)', () =
   let profileB: UserProfile;
   let codeA: string;
 
-  const emailA = 'test_e2e_econ_a@revizo.test';
+  const runId = Math.floor(Date.now() / 1000);
+  const emailA = `test_e2e_econ_a_${runId}@revizo.test`;
   const passwordA = 'RevizoEcon2026!Alpha';
 
-  const emailB = 'test_e2e_econ_b@revizo.test';
+  const emailB = `test_e2e_econ_b_${runId}@revizo.test`;
   const passwordB = 'RevizoEcon2026!Beta';
 
   beforeAll(async () => {
