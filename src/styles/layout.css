@@ -27,33 +27,38 @@
   padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 20px));
 }
 
-/* Top Header */
+/* Top Header — Optimisé Safe Area iOS & Android */
 .app-header {
-  height: var(--header-height);
+  min-height: calc(56px + env(safe-area-inset-top, 0px));
+  height: calc(56px + env(safe-area-inset-top, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--space-4);
+  padding: env(safe-area-inset-top, 0px) max(var(--space-4), env(safe-area-inset-right, 16px)) 0 max(var(--space-4), env(safe-area-inset-left, 16px));
   background-color: var(--bg-app);
   position: sticky;
   top: 0;
   z-index: 40;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .brand-title-text {
   font-family: var(--font-family-display);
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-primary);
   display: flex;
   align-items: center;
+  white-space: nowrap;
 }
 
 .brand-sparkle {
@@ -380,4 +385,50 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+
+/* ==========================================================================
+   OPTIMISATIONS MOBILE SMARTPHONE (< 640px) — iPHONE & ANDROID
+   ========================================================================== */
+@media (max-width: 640px) {
+  .app-header {
+    min-height: calc(52px + env(safe-area-inset-top, 0px));
+    height: calc(52px + env(safe-area-inset-top, 0px));
+    padding-left: max(12px, env(safe-area-inset-left, 12px));
+    padding-right: max(12px, env(safe-area-inset-right, 12px));
+    gap: 8px;
+  }
+
+  /* Conformité Règle 7 : sur mobile, haut droite = Recherche, Notifications, Profil */
+  .header-economy-pills {
+    display: none !important;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .header-icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .header-brand {
+    gap: 6px;
+  }
+
+  .brand-title-text {
+    font-size: 1.15rem;
+  }
+
+  .page-container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
 

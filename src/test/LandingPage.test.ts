@@ -190,5 +190,28 @@ describe('REVIZO — Tests Unitaires & Intégrité de la Landing Page', () => {
     expect(html).toContain('Vercel');
     expect(html).toContain('Supabase');
   });
+
+  it('vérifie la présence de l’icône officielle Apple Touch pour iPhone (apple-touch-icon.png)', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const appleIconPath = path.resolve(__dirname, '../../public/apple-touch-icon.png');
+    const manifestPath = path.resolve(__dirname, '../../public/manifest.json');
+    const indexPath = path.resolve(__dirname, '../../index.html');
+
+    // L'icône iPhone doit exister et être non vide
+    expect(fs.existsSync(appleIconPath)).toBe(true);
+    const stats = fs.statSync(appleIconPath);
+    expect(stats.size).toBeGreaterThan(1000);
+
+    // index.html doit déclarer apple-touch-icon
+    const indexContent = fs.readFileSync(indexPath, 'utf-8');
+    expect(indexContent).toContain('rel="apple-touch-icon"');
+    expect(indexContent).toContain('/apple-touch-icon.png');
+
+    // manifest.json doit pointer vers ?source=pwa
+    const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
+    expect(manifestContent).toContain('"start_url": "/?source=pwa"');
+  });
 });
+
 

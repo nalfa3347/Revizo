@@ -705,15 +705,19 @@
   padding-bottom: var(--space-8);
 }
 
-/* Titre dans le header mobile */
+/* Titre dans le header mobile — Responsive pour iPhone & Android */
 .header-revision-title {
   font-family: var(--font-family-display);
-  font-size: 1.85rem;
+  font-size: clamp(1.15rem, 4vw, 1.45rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-primary);
   margin: 0;
-  line-height: 1;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100vw - 140px);
 }
 
 @media (min-width: 860px) {
@@ -1092,11 +1096,12 @@
   background: transparent;
   border: none;
   font-family: var(--font-family-display);
-  font-size: 1.4rem;
+  font-size: clamp(1.05rem, 3.8vw, 1.25rem);
   font-weight: 800;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 0;
   margin: 0;
+  white-space: nowrap;
   transition: color var(--transition-fast);
 }
 

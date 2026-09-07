@@ -2,14 +2,20 @@
   "name": "REVIZO — Révisions & Quiz par IA",
   "short_name": "REVIZO",
   "description": "Transformez vos cours en révisions mémorables et quiz pertinents pour réussir vos examens.",
-  "start_url": "/",
-  "id": "/",
+  "start_url": "/?source=pwa",
+  "id": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#EA580C",
   "orientation": "portrait-primary",
   "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/revizo-logo-192.png",
       "sizes": "192x192",

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { NetworkBar } from '../common/NetworkBar';
+import { RevizoLogo } from '../common/RevizoLogo';
 
 export type TabKey = 'home' | 'revisions' | 'courses' | 'quizzes' | 'profile' | 'search' | 'notifications' | 'settings' | 'diamonds' | 'subscription' | 'referral';
 
@@ -52,7 +53,8 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* DESKTOP SIDEBAR BLANCHE (Fixe à gauche, masquée sur Mobile) */}
       <aside className="desktop-sidebar">
         {/* Logo REVIZO✦ */}
-        <div className="sidebar-header">
+        <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <RevizoLogo size={28} />
           <span className="sidebar-logo-text">
             REVIZO<span className="brand-sparkle">✦</span>
           </span>
@@ -259,6 +261,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             )
           ) : (
             <div className="header-brand">
+              <RevizoLogo size={26} />
               <span className="brand-title-text">
                 REVIZO<span className="brand-sparkle">✦</span>
               </span>

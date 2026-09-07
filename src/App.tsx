@@ -282,6 +282,18 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
   );
 };
 
+// Détection PWA / Application installée sur téléphone (iOS & Android)
+const isInstalledMobileApp = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const isStandaloneMedia = window.matchMedia('(display-mode: standalone)').matches;
+  const isMinimalMedia = window.matchMedia('(display-mode: minimal-ui)').matches;
+  const isFullscreenMedia = window.matchMedia('(display-mode: fullscreen)').matches;
+  const isIosStandalone = (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+  const search = window.location.search;
+  const isPwaUrl = search.includes('source=pwa') || search.includes('app') || search.includes('mode=app');
+  return isStandaloneMedia || isMinimalMedia || isFullscreenMedia || isIosStandalone || isPwaUrl;
+};
+
 const AppRoot: React.FC = () => {
   const { user, isAuthenticated, isLoading, signOut } = useAuth();
   const [authRequestedMode, setAuthRequestedMode] = useState<'login' | 'signup' | null>(null);
@@ -302,6 +314,16 @@ const AppRoot: React.FC = () => {
   }
 
   if (!isAuthenticated || !user) {
+    // Si l'utilisateur est sur l'application installée sur son téléphone : afficher directement la page de connexion
+    if (isInstalledMobileApp()) {
+      return (
+        <AuthView
+          initialMode={authRequestedMode || 'login'}
+        />
+      );
+    }
+
+    // Si l'utilisateur a cliqué sur Connexion ou Commencer depuis le web
     if (authRequestedMode) {
       return (
         <AuthView
@@ -310,6 +332,8 @@ const AppRoot: React.FC = () => {
         />
       );
     }
+
+    // Visiteurs web sur navigateur
     return (
       <LandingPage
         onOpenAuth={(mode) => setAuthRequestedMode(mode)}

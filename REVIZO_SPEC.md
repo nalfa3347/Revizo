@@ -613,5 +613,22 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - TypeScript : 0 erreur (`tsc -b --noEmit`).
     - Build de production : `tsc -b && vite build` validé avec succès.
     - Poussé sur Git `origin main` (déploiement automatique Vercel).
-
-
+- [x] **PHASE CONNEXION DIRECTE PWA/MOBILE, ICÔNE IPHONE HD & HEADER IN-APP RESPONSIVE** (Terminée et Validée le 2026-09-08)
+  - **Connexion Directe sur Application Téléchargée / PWA (`App.tsx` & `manifest.json`)** :
+    - Détection intelligente de l'environnement applicatif via `isInstalledMobileApp()` : vérifie `display-mode: standalone`, `display-mode: minimal-ui`, `display-mode: fullscreen`, la propriété iOS Safari `(navigator as any).standalone === true`, et les paramètres d'URL d'entrée PWA `?source=pwa` ou `?app`.
+    - Lorsqu'un utilisateur non connecté ouvre l'application installée sur son téléphone (Android ou iPhone), l'application **saute automatiquement la landing page** et affiche directement l'écran de connexion (`AuthView`).
+    - La Landing Page reste accessible pour les visiteurs sur navigateur web standard.
+  - **Icône Opaque Haute Définition pour iPhone (Apple Touch Icon)** :
+    - Résolution de la contrainte technique iOS : Safari transforme toute transparence PNG en fond noir sur l'écran d'accueil de l'iPhone.
+    - Création et déploiement d'une icône `apple-touch-icon.png` (180x180 px) 100% opaque avec fond dégradé officiel orange REVIZO (`#EA580C` vers `#F97316`), tracé R blanc et étoiles/points dorés.
+    - Déclaration explicite dans le `<head>` de `index.html` : `<link rel="apple-touch-icon" href="/apple-touch-icon.png" />` et tailles 180x180, garantissant un rendu impeccable sur tous les modèles d'iPhone.
+  - **Header In-App Parfaitement Responsive (iPhone & Android)** :
+    - Intégration du composant SVG `RevizoLogo` (26px) aux côtés du titre textuel `REVIZO✦` sur mobile et dans la barre latérale desktop (28px).
+    - Prise en charge des zones de sécurité iOS : padding supérieur avec `env(safe-area-inset-top)` pour ne jamais être masqué par le Dynamic Island ou l'encoche de l'iPhone.
+    - Adaptation responsive de la typographie : dimensionnement fluide par `clamp()` pour `.header-revision-title` et `.btn-header-back` avec troncature élégante `text-overflow: ellipsis` pour empêcher tout chevauchement ou rupture de ligne.
+    - Application stricte de la Règle 7 (Navigation officielle) sur mobile (< 640px) : masquage des pilules d'économie d'énergie (diamants et éclairs, déjà présents en grand sur l'Accueil) pour préserver plus de 230px d'espace libre pour les titres d'onglets (`Accueil`, `Mes révisions`, `Mes cours`, `Quiz`), sans collision avec les actions de droite (Recherche, Notifications, Avatar).
+  - **Validation & Non-Régression** :
+    - 22 suites de tests validées (161 tests avec 100% de réussite).
+    - Compilation TypeScript stricte sans erreur (`tsc -b --noEmit`).
+    - Build de production Vite (`tsc -b && vite build`) validé avec succès.
+    - Vérification visuelle multi-écrans (360px Android, 375px-390px iPhone, 412px, etc.).
