@@ -165,7 +165,34 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({
             FAQ
           </a>
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          {/* SÉLECTEUR DE LANGUE DANS LE MENU MOBILE */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+              borderTop: '1px solid var(--landing-border-subtle)',
+              marginTop: '4px'
+            }}
+          >
+            <span style={{ fontSize: '0.88rem', color: 'var(--landing-text-muted)' }}>Langue de l'application</span>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                color: 'var(--landing-text-main)'
+              }}
+            >
+              <Globe size={15} />
+              <span>Français (FR)</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
             <button
               className="landing-btn-login"
               style={{ flex: 1, border: '1px solid var(--landing-border-subtle)', textAlign: 'center' }}

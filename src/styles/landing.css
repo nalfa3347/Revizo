@@ -1361,7 +1361,9 @@
   }
 
   .landing-burger-btn {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .landing-hero-section {
@@ -1392,6 +1394,103 @@
     width: min(310px, 88vw);
     height: 610px;
     border-radius: 42px;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing-container {
+    padding: 0 16px;
+  }
+
+  .landing-nav-inner {
+    height: 62px;
+    gap: 10px;
+  }
+
+  .landing-brand {
+    gap: 6px;
+  }
+
+  .landing-brand-text {
+    font-size: 1.22rem;
+  }
+
+  .landing-nav-actions {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Masquer FR et Commencer du bandeau supérieur sur mobile (conservés dans le menu déroulant) */
+  .landing-nav-actions .landing-lang-btn {
+    display: none;
+  }
+
+  .landing-nav-actions .landing-btn-primary-pill {
+    display: none;
+  }
+
+  /* Dans le menu déroulant mobile, afficher les deux boutons pleines largeurs */
+  .landing-mobile-menu .landing-btn-primary-pill {
+    display: inline-flex !important;
+  }
+
+  /* Bouton Connexion mobile : bien dimensionné, élégant, stylé en pilule et ultra-accessible */
+  .landing-btn-login {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFF;
+    border: 1px solid var(--landing-border-subtle, #E5E7EB);
+    color: var(--landing-text-main, #111827);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    white-space: nowrap;
+    line-height: 1.3;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+
+  .landing-btn-login:hover {
+    background: var(--accent-orange-subtle, #FFF3E8);
+    border-color: var(--accent-orange-border, #FFD8BA);
+    color: var(--accent-orange, #EA580C);
+  }
+
+  /* Bouton Burger sur mobile */
+  .landing-burger-btn {
+    width: 38px;
+    height: 38px;
+    padding: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--landing-text-main, #111827);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+
+  .landing-burger-btn:hover {
+    background: var(--landing-bg-subtle, #F3F4F6);
+    border-color: var(--landing-border-subtle, #E5E7EB);
+  }
+}
+
+@media (max-width: 360px) {
+  .landing-container {
+    padding: 0 10px;
+  }
+
+  .landing-brand-text {
+    font-size: 1.1rem;
+  }
+
+  .landing-btn-login {
+    padding: 5px 10px;
+    font-size: 0.8rem;
   }
 }
 
