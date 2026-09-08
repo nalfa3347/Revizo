@@ -28,9 +28,9 @@ export class AuthService {
       return { isValid: true, type: 'email' };
     }
 
-    // Détection téléphone (au moins 10 chiffres pour un format français/international)
+    // Détection téléphone (format local 8 chiffres ou international jusqu'à 15 chiffres)
     const digitsOnly = trimmed.replace(/\D/g, '');
-    if (digitsOnly.length >= 10 && digitsOnly.length <= 15) {
+    if (digitsOnly.length >= 8 && digitsOnly.length <= 15 && /^[\d+\s().-]+$/.test(trimmed)) {
       return { isValid: true, type: 'phone' };
     }
 
@@ -139,5 +139,12 @@ export class AuthService {
 
   async isAuthenticated(): Promise<boolean> {
     return this.authProvider.isAuthenticated();
+  }
+
+  onAuthStateChange(callback: (user: UserProfile | null) => void): (() => void) | undefined {
+    if (this.authProvider.onAuthStateChange) {
+      return this.authProvider.onAuthStateChange(callback);
+    }
+    return undefined;
   }
 }

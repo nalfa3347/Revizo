@@ -632,3 +632,23 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - Compilation TypeScript stricte sans erreur (`tsc -b --noEmit`).
     - Build de production Vite (`tsc -b && vite build`) validé avec succès.
     - Vérification visuelle multi-écrans (360px Android, 375px-390px iPhone, 412px, etc.).
+- [x] **PHASE AUTHENTIFICATION UNIFIÉE & PERSISTANCE MULTI-APPAREILS (EMAIL & NUMÉRO DE TÉLÉPHONE)** (Terminée et Validée le 2026-09-08)
+  - **Stratégie d'Identité & Mapping Déterministe d'Email Virtuel (`SupabaseAuthProvider.ts`)** :
+    - Résolution de la contrainte Supabase Auth qui impose une adresse email pour `signInWithPassword` : mise en œuvre d'un mapping déterministe `phone_{chiffres}@auth.revizo.app` pour les comptes créés avec un numéro de téléphone.
+    - Gestion robuste et bidirectionnelle des formats d'indicatifs : détection automatique et tentative de secours pour les formats ouest-africains (ex: Togo +228, 8 chiffres locaux vs 11 chiffres internationaux) et français (06... vs +336...).
+    - Assainissement strict des emails virtuels côté affichage et domaine via `UserMapper.ts` et `SupabaseAuthProvider.ts` : aucun email virtuel n'est jamais exposé à l'élève dans son profil ou son interface.
+  - **Trigger SQL d'Amorçage Résilient & Idempotent (`handle_new_user`)** :
+    - Mise à jour de la fonction trigger `public.handle_new_user` sur `auth.users` : pour les comptes créés par téléphone (`is_phone_account = true`), le champ `public.users.email` est positionné à `NULL` (et `phone` est renseigné avec le numéro brut), empêchant toute collision d'unicité d'email.
+    - Initialisation idempotente avec clause `ON CONFLICT (id) DO NOTHING` pour `public.users`, `public.user_progress` et `public.user_settings`.
+  - **Vérification Sécurisée Préventive & RPC Multi-Formats (`check_identifier_exists`)** :
+    - Fonction PostgreSQL `check_identifier_exists` avec privilèges `SECURITY DEFINER` : permet aux visiteurs non connectés de vérifier l'existence de leur compte sans violer les politiques d'isolation RLS.
+    - Recherche universelle couvrant à la fois `auth.users` et `public.users` par email direct, chiffres bruts de téléphone, et variations d'indicatifs (+228 / +33).
+    - Vérification préventive intégrée dans `SupabaseAuthProvider.signUp` et `AuthView.tsx` : affichage immédiat d'un message bienveillant et clair ("Un compte existe déjà avec ce numéro de téléphone. Connecte-toi directement.") au lieu d'une erreur 500 ou technique.
+    - Échappatoire conviviale ajoutée dans `AuthView` : si l'identifiant n'est pas détecté, l'élève peut toujours forcer la saisie directe de son mot de passe en un clic.
+  - **Gestion Réactive de l'État de Session & Multi-Onglets (`AuthContext.tsx`)** :
+    - Implémentation de `onAuthStateChange` dans `IAuthProvider`, `SupabaseAuthProvider`, `MockAuthProvider` et `AuthService`.
+    - Abonnement dans `AuthContext` permettant la synchronisation immédiate de la session utilisateur lors des rafraîchissements automatiques de tokens ou des connexions multi-onglets/multi-appareils.
+  - **Suite de Tests E2E Dédiée & Non-Régression Complète** :
+    - Création de `PhoneAndEmailAuthE2E.test.ts` (8 étapes automatisées validées à 100%) : inscription téléphone, détection multiformats, connexion locale et internationale, déconnexion/reconnexion, blocage des doublons, flux email complet, et gestion bienveillante des mots de passe erronés.
+    - Validation complète : **23 suites de tests réussies, 169/169 tests passants (100%)**.
+    - Build de production validé (`tsc -b && vite build`) en 9.66s avec 0 erreur.

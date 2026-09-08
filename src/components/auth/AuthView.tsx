@@ -184,7 +184,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
         rawMsg.includes('existe déjà') ||
         rawMsg.includes('User already registered')
       ) {
-        setErrorMessage('Un compte existe déjà avec cette adresse email.');
+        setErrorMessage(
+          signupMethod === 'phone'
+            ? 'Un compte existe déjà avec ce numéro de téléphone.'
+            : 'Un compte existe déjà avec cette adresse email.'
+        );
         setLoginIdentifier(trimmedId);
         setLoginMethod(signupMethod);
       } else {
@@ -403,6 +407,25 @@ export const AuthView: React.FC<AuthViewProps> = ({
                     >
                       <Sparkles size={16} />
                       <span>Créer mon compte avec cet identifiant</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginStep('password');
+                        resetErrors();
+                      }}
+                      style={{
+                        marginTop: '10px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#64748B',
+                        fontSize: '0.82rem',
+                        textDecoration: 'underline',
+                        cursor: 'pointer'
+                      }}
+                      id="btn-force-password-login"
+                    >
+                      Tu as déjà un compte ? Saisir ton mot de passe →
                     </button>
                   </div>
                 )}

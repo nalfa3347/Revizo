@@ -24,8 +24,8 @@ export class SupabaseAuthProvider implements IAuthProvider {
 
   private normalizeIdentifier(raw: string): string {
     const trimmed = raw.trim().toLowerCase();
-    if (/^[\d+\s.-]+$/.test(trimmed)) {
-      return trimmed.replace(/[\s.-]/g, '');
+    if (/^[\d+\s().-]+$/.test(trimmed)) {
+      return trimmed.replace(/[\s().-]/g, '');
     }
     return trimmed;
   }
@@ -38,19 +38,37 @@ export class SupabaseAuthProvider implements IAuthProvider {
     return 'phone';
   }
 
+  private phoneToVirtualEmail(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    return `phone_${digits}@auth.revizo.app`;
+  }
+
   async getCurrentUser(): Promise<UserProfile | null> {
     try {
-      const { data: { user }, error } = await this.client.auth.getUser();
-      if (error || !user) return null;
+      // 1. Assurer la validité de la session et rafraîchir le token automatiquement si expiré
+      const { data: { session }, error: sessionError } = await this.client.auth.getSession();
+      if (sessionError || !session?.user) {
+        return null;
+      }
 
+      const user = session.user;
       const profile = await this.userRepo.getById(user.id);
-      if (profile) return profile;
+      
+      const isVirtualEmail = (email?: string | null) => Boolean(email && (email.endsWith('@auth.revizo.app') || email.startsWith('phone_')));
 
-      // Si le profil en table n'existe pas encore, construire un profil temporaire à partir du compte auth
+      if (profile) {
+        return {
+          ...profile,
+          email: isVirtualEmail(profile.email) ? '' : profile.email,
+          phone: profile.phone || (user.user_metadata?.phone as string) || user.phone || undefined
+        };
+      }
+
+      // Si le profil en table n'existe pas encore, construire le profil depuis auth.users
       return {
         id: user.id,
-        email: user.email || '',
-        phone: user.phone || undefined,
+        email: isVirtualEmail(user.email) ? '' : (user.email || ''),
+        phone: (user.user_metadata?.phone as string) || user.phone || undefined,
         displayName: (user.user_metadata?.display_name as string) || 'Élève',
         gradeLevel: (user.user_metadata?.grade_level as any) || '3e',
         joinedAt: user.created_at
@@ -71,17 +89,30 @@ export class SupabaseAuthProvider implements IAuthProvider {
     const type = this.detectIdentifierType(identifier);
 
     try {
-      // Vérification discrète dans la table publique des profils
+      // Vérification sécurisée via fonction RPC SECURITY DEFINER (contourne l'isolation RLS pour les visiteurs non connectés)
+      const { data, error } = await (this.client as any).rpc('check_identifier_exists', {
+        p_identifier: normalized
+      });
+
+      if (!error && typeof data === 'boolean') {
+        return {
+          exists: data,
+          type
+        };
+      }
+
+      // En cas de secours, tentative via table publique
       let query = this.client.from('users').select('id');
       if (type === 'email') {
         query = query.eq('email', normalized);
       } else {
-        query = query.eq('phone', normalized);
+        const digits = normalized.replace(/\D/g, '');
+        query = query.or(`phone.eq.${normalized},phone.eq.${digits}`);
       }
 
-      const { data } = await query.maybeSingle();
+      const fallbackRes = await query.maybeSingle();
       return {
-        exists: Boolean(data),
+        exists: Boolean(fallbackRes.data),
         type
       };
     } catch {
@@ -96,25 +127,98 @@ export class SupabaseAuthProvider implements IAuthProvider {
     const normalized = this.normalizeIdentifier(credentials.identifier);
     const type = this.detectIdentifierType(credentials.identifier);
 
-    const authPayload = type === 'email'
-      ? { email: normalized, password: credentials.password }
-      : { phone: normalized, password: credentials.password };
+    let authUser: any = null;
 
-    const { data, error } = await this.client.auth.signInWithPassword(authPayload);
-    if (error || !data.user) {
-      throw new Error(error?.message || 'Identifiants invalides.');
+    if (type === 'email') {
+      const { data, error } = await this.client.auth.signInWithPassword({
+        email: normalized,
+        password: credentials.password
+      });
+      if (error || !data.user) {
+        if (error?.message?.includes('Invalid login credentials')) {
+          throw new Error('Identifiants ou mot de passe incorrect.');
+        }
+        throw new Error(error?.message || 'Identifiants ou mot de passe incorrect.');
+      }
+      authUser = data.user;
+    } else {
+      // Connexion par numéro de téléphone : mapping d'email virtuel déterministe
+      const digits = normalized.replace(/\D/g, '');
+      const primaryVirtualEmail = this.phoneToVirtualEmail(digits);
+
+      let signInResult = await this.client.auth.signInWithPassword({
+        email: primaryVirtualEmail,
+        password: credentials.password
+      });
+
+      // Tentative de secours pour les numéros ouest-africains (avec ou sans indicatif 228)
+      if (signInResult.error && digits.length === 8) {
+        const altEmail = `phone_228${digits}@auth.revizo.app`;
+        const altResult = await this.client.auth.signInWithPassword({
+          email: altEmail,
+          password: credentials.password
+        });
+        if (!altResult.error && altResult.data.user) {
+          signInResult = altResult;
+        }
+      } else if (signInResult.error && digits.length === 11 && digits.startsWith('228')) {
+        const altEmail = `phone_${digits.slice(3)}@auth.revizo.app`;
+        const altResult = await this.client.auth.signInWithPassword({
+          email: altEmail,
+          password: credentials.password
+        });
+        if (!altResult.error && altResult.data.user) {
+          signInResult = altResult;
+        }
+      } else if (signInResult.error && digits.length === 10 && digits.startsWith('0')) {
+        // Numéros français avec 0 initial (06... -> 336...)
+        const altEmail = `phone_33${digits.slice(1)}@auth.revizo.app`;
+        const altResult = await this.client.auth.signInWithPassword({
+          email: altEmail,
+          password: credentials.password
+        });
+        if (!altResult.error && altResult.data.user) {
+          signInResult = altResult;
+        }
+      } else if (signInResult.error && digits.length === 11 && digits.startsWith('33')) {
+        // Numéros français avec indicatif (336... -> 06...)
+        const altEmail = `phone_0${digits.slice(2)}@auth.revizo.app`;
+        const altResult = await this.client.auth.signInWithPassword({
+          email: altEmail,
+          password: credentials.password
+        });
+        if (!altResult.error && altResult.data.user) {
+          signInResult = altResult;
+        }
+      }
+
+      if (signInResult.error || !signInResult.data.user) {
+        if (signInResult.error?.message?.includes('Invalid login credentials')) {
+          throw new Error('Identifiants ou mot de passe incorrect.');
+        }
+        throw new Error(signInResult.error?.message || 'Identifiants ou mot de passe incorrect.');
+      }
+
+      authUser = signInResult.data.user;
     }
 
-    const profile = await this.userRepo.getById(data.user.id);
-    if (profile) return profile;
+    const profile = await this.userRepo.getById(authUser.id);
+    if (profile) {
+      const isVirtual = profile.email && (profile.email.endsWith('@auth.revizo.app') || profile.email.startsWith('phone_'));
+      return {
+        ...profile,
+        email: isVirtual ? '' : profile.email,
+        phone: profile.phone || (authUser.user_metadata?.phone as string) || (type === 'phone' ? credentials.identifier.trim() : undefined)
+      };
+    }
 
-    // Création initiale si absent
+    // Création initiale si profil absent
     return this.userRepo.upsert({
-      id: data.user.id,
-      email: data.user.email || '',
-      phone: data.user.phone || undefined,
-      displayName: (data.user.user_metadata?.display_name as string) || 'Élève',
-      gradeLevel: (data.user.user_metadata?.grade_level as any) || '3e'
+      id: authUser.id,
+      email: type === 'email' ? normalized : '',
+      phone: type === 'phone' ? credentials.identifier.trim() : undefined,
+      displayName: (authUser.user_metadata?.display_name as string) || 'Élève',
+      gradeLevel: (authUser.user_metadata?.grade_level as any) || '3e'
     });
   }
 
@@ -122,28 +226,36 @@ export class SupabaseAuthProvider implements IAuthProvider {
     const normalized = this.normalizeIdentifier(signUpData.identifier);
     const type = this.detectIdentifierType(signUpData.identifier);
     const displayName = signUpData.displayName.trim();
+    const isPhone = type === 'phone';
 
-    const authPayload = type === 'email'
-      ? {
-          email: normalized,
-          password: signUpData.password,
-          options: {
-            data: {
-              display_name: displayName,
-              grade_level: signUpData.gradeLevel
-            }
-          }
+    // Vérification préventive pour éviter les erreurs génériques de Supabase
+    const existingCheck = await this.checkIdentifier(signUpData.identifier);
+    if (existingCheck.exists) {
+      throw new Error(
+        isPhone
+          ? 'Un compte existe déjà avec ce numéro de téléphone. Connecte-toi directement.'
+          : 'Un compte existe déjà avec cette adresse email. Connecte-toi directement.'
+      );
+    }
+
+    let emailToUse = normalized;
+    if (isPhone) {
+      const digits = normalized.replace(/\D/g, '');
+      emailToUse = this.phoneToVirtualEmail(digits);
+    }
+
+    const authPayload = {
+      email: emailToUse,
+      password: signUpData.password,
+      options: {
+        data: {
+          display_name: displayName,
+          grade_level: signUpData.gradeLevel,
+          phone: isPhone ? signUpData.identifier.trim() : undefined,
+          is_phone_account: isPhone
         }
-      : {
-          phone: normalized,
-          password: signUpData.password,
-          options: {
-            data: {
-              display_name: displayName,
-              grade_level: signUpData.gradeLevel
-            }
-          }
-        };
+      }
+    };
 
     const { data, error } = await this.client.auth.signUp(authPayload);
     if (error || !data.user) {
@@ -152,22 +264,23 @@ export class SupabaseAuthProvider implements IAuthProvider {
 
     // Détection Supabase : si l'utilisateur existe déjà, identities est une liste vide
     if (data.user.identities && data.user.identities.length === 0) {
-      throw new Error("Un compte existe déjà avec cette adresse email. Veuillez vous connecter directement.");
+      throw new Error(
+        isPhone
+          ? 'Un compte existe déjà avec ce numéro de téléphone. Connecte-toi directement.'
+          : 'Un compte existe déjà avec cette adresse email. Connecte-toi directement.'
+      );
     }
 
     const newProfile: UserProfile = {
       id: data.user.id,
-      email: data.user.email || (type === 'email' ? normalized : ''),
-      phone: data.user.phone || (type === 'phone' ? normalized : undefined),
+      email: isPhone ? '' : normalized,
+      phone: isPhone ? signUpData.identifier.trim() : undefined,
       displayName,
       gradeLevel: signUpData.gradeLevel,
       joinedAt: new Date().toISOString()
     };
 
     // Initialisation profil, progression et paramètres dans Supabase
-    // Note : Le trigger PostgreSQL `on_auth_user_created` (SECURITY DEFINER) initialise déjà
-    // automatiquement users, user_progress et user_settings en base de données.
-    // Les upserts client ne sont exécutés que si une session active est disponible.
     if (data.session) {
       try {
         await this.userRepo.upsert(newProfile);

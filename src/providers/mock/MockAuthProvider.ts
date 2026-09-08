@@ -123,11 +123,32 @@ export class MockAuthProvider implements IAuthProvider {
     });
 
     this.currentUser = JSON.parse(JSON.stringify(newUser));
+    this.notifyAuthChange(this.currentUser);
     return JSON.parse(JSON.stringify(this.currentUser));
   }
 
   async signOut(): Promise<void> {
     await this.simulateDelay();
     this.currentUser = null;
+    this.notifyAuthChange(null);
+  }
+
+  private listeners: ((user: UserProfile | null) => void)[] = [];
+
+  onAuthStateChange(callback: (user: UserProfile | null) => void): () => void {
+    this.listeners.push(callback);
+    return () => {
+      this.listeners = this.listeners.filter(cb => cb !== callback);
+    };
+  }
+
+  private notifyAuthChange(user: UserProfile | null): void {
+    this.listeners.forEach(callback => {
+      try {
+        callback(user ? JSON.parse(JSON.stringify(user)) : null);
+      } catch (err) {
+        console.error('[MockAuthProvider] Erreur callback onAuthStateChange :', err);
+      }
+    });
   }
 }

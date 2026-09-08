@@ -3,9 +3,12 @@ import { SupabaseUserRow } from '../types/database.types';
 
 export class UserMapper {
   static toDomain(row: SupabaseUserRow): UserProfile {
+    const isVirtualEmail = (email?: string | null) =>
+      Boolean(email && (email.endsWith('@auth.revizo.app') || email.startsWith('phone_')));
+
     return {
       id: row.id,
-      email: row.email || '',
+      email: isVirtualEmail(row.email) ? '' : (row.email || ''),
       phone: row.phone || undefined,
       displayName: row.display_name,
       avatarUrl: row.avatar_url || undefined,

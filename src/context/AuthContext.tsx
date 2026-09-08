@@ -57,8 +57,22 @@ export const AuthProvider: React.FC<{
     };
 
     checkSession();
+
+    // Abonnement réactif aux changements de session (rafraîchissement automatique du token, multi-onglets)
+    const unsubscribe = authService.onAuthStateChange((userState) => {
+      if (mounted) {
+        setUser(userState);
+        if (onUserChange) {
+          onUserChange(userState);
+        }
+      }
+    });
+
     return () => {
       mounted = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [authService, onUserChange]);
 
