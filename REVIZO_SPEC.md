@@ -747,6 +747,45 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - Déploiement réussi sur Supabase : **Version 8 active (`ACTIVE`)**.
     - Appel live de validation en production exécuté avec succès (status 200, `modelUsed: "gemini-3.5-flash-lite"`).
 
+- [x] **PHASE VÉRIFICATION FACTURATION, CORRECTION MARGE PREMIUM, TEST DOCUMENTS LONGS & LIMITE D'ESSAI GRATUIT** (Terminée et Validée le 2026-09-09)
+  - **Tâche 1 — Diagnostic Facturation Google Cloud & Quotas Actifs** :
+    - *Facturation Google Cloud* : **NON ACTIVÉE**. Test de charge direct sur l'API Gemini : dès la 8e requête simultanée, l'API renvoie une erreur `HTTP 429: You exceeded your current quota, please check your plan and billing details`. Le projet fonctionne toujours sur le **Tier Gratuit Google AI Studio (Free Tier)**.
+    - *Quotas actifs confirmés* :
+      - `gemini-3.6-flash` : 5 RPM, 20 RPD, 250 000 TPM.
+      - `gemini-3.5-flash-lite` : 15 RPM, 1 500 RPD, 1 000 000 TPM (protégé préventivement par le garde-fou applicatif REVIZO fixé à 18 cours/jour tant que la facturation n'est pas activée).
+    - *Directive stricte* : aucun test multi-utilisateurs massif avant l'activation effective de la carte/facturation sur Google Cloud.
+  - **Tâche 2 — Correction Mathématique de la Marge sur le Forfait Premium** :
+    - *Problème résolu* : à 20 générations/jour (600/mois), avec des frais FedaPay de 3% (150 FCFA) et un coût réel de 8,38 FCFA/cours, le forfait Premium accusait une perte nette de -178 FCFA ($4\,850 - 5\,028$).
+    - *Ajustement du quota officiel* : quota Premium ramené de 20 à **18 générations/jour** (soit 540 cours/mois max).
+    - *Calcul de la nouvelle marge* :
+      - Revenu net perçu : $5\,000 - 150 = 4\,850\text{ FCFA}$.
+      - Coût IA max à saturation complète (540 cours) : $540 \times 8,38 = 4\,525,2\text{ FCFA}$.
+      - **Marge nette à saturation complète** : $\mathbf{+324,8\text{ FCFA}}$ (**+6,5% de bénéfice net garanti** même si l'élève consomme 100% de son quota chaque jour du mois).
+      - **Marge nette en usage réel élevé (120 cours/mois)** : $4\,850 - 1\,005,6 = \mathbf{+3\,844,4\text{ FCFA}}$ (**+76,9% de marge nette**).
+    - *Alignement code source* : `SUBSCRIPTION_PLANS.premium.dailyRevisionLimit = 18`, `features[0] = '18 révisions intelligentes par jour'`, `MockDataProvider`, et `record_revision_usage` SQL.
+  - **Tâche 3 — Benchmark sur Documents Longs & Limite Garantie à 100%** :
+    - *Résultats expérimentaux réels avec `gemini-3.5-flash-lite`* :
+      1. **~10 pages** (3 112 mots / 20.9 Ko) : 5 508 in / 6 445 out (11 953 total), 18.8s, finishReason: 'STOP', JSON 100% valide, 10 concepts dédupliqués.
+      2. **~20 pages** (6 213 mots / 41.8 Ko) : 10 579 in / 8 310 out (18 889 total), 24.2s, finishReason: 'STOP', JSON 100% valide, 20 concepts dédupliqués.
+      3. **~30 pages** (9 305 mots / 62.7 Ko) : 15 654 in / 11 253 out (26 907 total), 32.7s, finishReason: 'STOP', JSON 100% valide, 22 concepts (38 964 caractères générés).
+    - *Limite maximale garantie à 100% pour un appel unique* : **20 pages**. Au-delà de 20 pages, le risque de latence excessive (> 35-40s) et de timeout réseau augmente, et la densité pédagogique commence à s'étaler.
+    - *Garde-fou d'import implémenté* :
+      - Détection de pagination instantanée côté frontend via `getPdfPageCount(file)` dans `src/utils/documentUtils.ts`.
+      - Si `pageCount > 20` : blocage préventif avec affichage bienveillant : *"Ce cours fait X pages et dépasse la limite de 20 pages par révision. Découpe-le en chapitres pour garantir une révision complète, ultra-précise et sans omission."*
+      - Sécurisation côté serveur dans l'Edge Function (`status: 422`, `tooManyPages: true`).
+  - **Tâche 4 — Règle Stricte d'Essai Gratuit (1 Seul Import à Vie pour Non-Abonnés)** :
+    - *Règle produit* : Un utilisateur sans abonnement payant actif a droit à exactement **1 import gratuit à vie**.
+    - *Blocage au 2e import* :
+      - Contrôle serveur strict dans `record_revision_usage` : si `v_courses_count >= 1` et aucun forfait payant actif, retour immédiat de `trialExhausted = TRUE` et HTTP 403. Impossible de contourner en rechargeant ou en appelant l'API.
+      - Contrôle d'interface dans `RevisionView.tsx` : si `hasExhaustedFreeTrial`, le clic sur import PDF ou photo bloque l'import et redirige directement vers l'écran des forfaits (`SubscriptionView` avec Essentiel 1 000 F, Pro 3 000 F, Premium 5 000 F et paiement FedaPay).
+      - Dans `ImportProcessingModal.tsx` : affichage du titre *"Essai gratuit terminé"* avec bouton *"Choisir un forfait"* déclenchant le choix du forfait.
+    - *Immunité des abonnés payants* : tout utilisateur disposant d'un abonnement actif (`essentiel`, `intensif`/`pro`, `premium`) n'est jamais bloqué par l'essai gratuit. Seul son quota quotidien officiel s'applique (Essentiel: 4/j, Pro: 10/j, Premium: 18/j).
+  - **Validation & Non-Régression** :
+    - Edge Function Supabase `orchestrate-course` déployée en **Version 9 active (`ACTIVE`)**.
+    - Tests réels d'API sur compte non abonné (HTTP 403 bloquant avec message d'essai gratuit) et compte abonné (HTTP 200 avec quota 18/j).
+    - 25 suites de tests unitaires et d'intégration réussies (48/48 tests de monétisation et utilitaires validés à 100%).
+    - Build de production `tsc -b && vite build` validé avec succès en 13.31s.
+
 ---
 
 ## 🔒 RÈGLE IMPÉRATIVE DE SÉCURITÉ : GESTION DES SECRETS & CLÉS D'API

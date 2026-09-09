@@ -331,97 +331,129 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
         )}
 
         {/* 3. ÉTAT ERREUR BIENVEILLANTE SANS JARGON TECHNIQUE */}
-        {isError && (
-          <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <div
-              style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '50%',
-                backgroundColor: '#FEF2F2',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '16px'
-              }}
-            >
-              <AlertCircle size={30} color="#EF4444" />
-            </div>
+        {isError && (() => {
+          const msg = progress?.message || '';
+          const isTrialExhausted = msg.includes('essai gratuit') || msg.includes('Choisis un forfait');
+          const isTooManyPages = msg.includes('limite de 20 pages') || msg.includes('dépasse 20 pages') || msg.includes('Découpe-le');
+          const isDailyLimit = msg.includes('limite de révisions') || msg.includes('quota');
 
-            <h3
-              style={{
-                fontFamily: 'var(--font-family-display)',
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                color: '#1E293B',
-                marginBottom: '8px'
-              }}
-            >
-              Lecture du document interrompue
-            </h3>
+          let errorTitle = 'Lecture du document interrompue';
+          if (isTrialExhausted) {
+            errorTitle = 'Essai gratuit terminé';
+          } else if (isTooManyPages) {
+            errorTitle = 'Document trop long (> 20 pages)';
+          } else if (isDailyLimit) {
+            errorTitle = 'Limite quotidienne atteinte';
+          }
 
-            <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: '1.5', marginBottom: '20px' }}>
-              {progress?.message || 'Nous n’avons pas pu lire le contenu de ce document. Assure-toi que le fichier est un PDF ou une photo lisible.'}
-            </p>
+          return (
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: isTrialExhausted ? '#FFF7ED' : '#FEF2F2',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '16px'
+                }}
+              >
+                <AlertCircle size={30} color={isTrialExhausted ? '#EA580C' : '#EF4444'} />
+              </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              {progress?.message?.includes('limite de révisions') && onNavigateToSubscription ? (
-                <>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-family-display)',
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  color: '#1E293B',
+                  marginBottom: '8px'
+                }}
+              >
+                {errorTitle}
+              </h3>
+
+              <p style={{ fontSize: '0.9rem', color: '#64748B', lineHeight: '1.5', marginBottom: '20px' }}>
+                {msg || 'Nous n’avons pas pu lire le contenu de ce document. Assure-toi que le fichier est un PDF ou une photo lisible.'}
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {(isTrialExhausted || isDailyLimit) && onNavigateToSubscription ? (
+                  <>
+                    <button
+                      style={{
+                        backgroundColor: '#EA580C',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '12px 22px',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 14px rgba(234, 88, 12, 0.3)'
+                      }}
+                      onClick={() => {
+                        onClose();
+                        onNavigateToSubscription();
+                      }}
+                    >
+                      {isTrialExhausted ? 'Choisir un forfait' : 'Voir les forfaits'}
+                    </button>
+                    <button
+                      style={{
+                        backgroundColor: '#F3F4F6',
+                        color: '#4B5563',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '12px 18px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                      onClick={onClose}
+                    >
+                      Fermer
+                    </button>
+                  </>
+                ) : isTooManyPages ? (
                   <button
                     style={{
-                      backgroundColor: '#EA580C',
+                      backgroundColor: '#1E293B',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '12px 24px',
+                      fontSize: '0.95rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    onClick={onClose}
+                  >
+                    J'ai compris
+                  </button>
+                ) : (
+                  <button
+                    style={{
+                      backgroundColor: '#C47D2B',
                       color: '#FFFFFF',
                       border: 'none',
                       borderRadius: '12px',
                       padding: '10px 20px',
                       fontSize: '0.9rem',
                       fontWeight: 700,
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(234, 88, 12, 0.25)'
-                    }}
-                    onClick={() => {
-                      onClose();
-                      onNavigateToSubscription();
-                    }}
-                  >
-                    Voir les abonnements
-                  </button>
-                  <button
-                    style={{
-                      backgroundColor: '#F3F4F6',
-                      color: '#4B5563',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '10px 18px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
                       cursor: 'pointer'
                     }}
                     onClick={onClose}
                   >
-                    Fermer
+                    Réessayer
                   </button>
-                </>
-              ) : (
-                <button
-                  style={{
-                    backgroundColor: '#C47D2B',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '10px 20px',
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                  onClick={onClose}
-                >
-                  Réessayer
-                </button>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

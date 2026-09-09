@@ -249,7 +249,7 @@ describe('REVIZO — AUDIT FINAL PRODUIT + UX + MONÉTISATION', () => {
 
       const essentiel = plans.find(p => p.id === 'essentiel')!;
       expect(essentiel.priceFcfa).toBe(1000);
-      expect(essentiel.dailyRevisionLimit).toBe(3);
+      expect(essentiel.dailyRevisionLimit).toBe(4);
       expect(essentiel.maxEnergy).toBe(10);
       expect(essentiel.initialDiamonds).toBe(10);
 
@@ -262,18 +262,18 @@ describe('REVIZO — AUDIT FINAL PRODUIT + UX + MONÉTISATION', () => {
 
       const premium = plans.find(p => p.id === 'premium')!;
       expect(premium.priceFcfa).toBe(5000);
-      expect(premium.dailyRevisionLimit).toBe(20);
+      expect(premium.dailyRevisionLimit).toBe(18);
       expect(premium.maxEnergy).toBe(30);
       expect(premium.initialDiamonds).toBe(60);
     });
 
-    it('active Essentiel : met à jour le quota à 3 révisions/jour et attribue 10 💎 idempotents', async () => {
+    it('active Essentiel : met à jour le quota à 4 révisions/jour et attribue 10 💎 idempotents', async () => {
       const res = await monetizationService.activateSubscription('essentiel');
       expect(res.success).toBe(true);
 
       const state = await economyService.getEconomyState();
       expect(state.subscription.plan).toBe('essentiel');
-      expect(state.subscription.dailyRevisionLimit).toBe(3);
+      expect(state.subscription.dailyRevisionLimit).toBe(4);
       expect(state.energy.maxEnergy).toBe(10);
       expect(state.diamonds.balance).toBe(20);
     });
@@ -288,13 +288,13 @@ describe('REVIZO — AUDIT FINAL PRODUIT + UX + MONÉTISATION', () => {
       expect(state.energy.maxEnergy).toBe(20);
     });
 
-    it('active Premium : met à jour le quota à 20 révisions/jour et énergie max à 30', async () => {
+    it('active Premium : met à jour le quota à 18 révisions/jour et énergie max à 30', async () => {
       const res = await monetizationService.activateSubscription('premium');
       expect(res.success).toBe(true);
 
       const state = await economyService.getEconomyState();
       expect(state.subscription.plan).toBe('premium');
-      expect(state.subscription.dailyRevisionLimit).toBe(20);
+      expect(state.subscription.dailyRevisionLimit).toBe(18);
       expect(state.energy.maxEnergy).toBe(30);
     });
   });
@@ -303,26 +303,20 @@ describe('REVIZO — AUDIT FINAL PRODUIT + UX + MONÉTISATION', () => {
   // 6. CONTRÔLE SERVEUR DES QUOTAS DE RÉVISION
   // =========================================================================
   describe('6. Limites Quotidiennes de Révision', () => {
-    it('Essentiel : bloque strictement la 4e tentative de révision le même jour', async () => {
+    it('Essentiel : bloque strictement la 5e tentative de révision le même jour', async () => {
       await monetizationService.activateSubscription('essentiel');
 
-      const r1 = await monetizationService.checkAndRecordRevision();
-      expect(r1.allowed).toBe(true);
-      expect(r1.used).toBe(1);
+      for (let i = 1; i <= 4; i++) {
+        const r = await monetizationService.checkAndRecordRevision();
+        expect(r.allowed).toBe(true);
+        expect(r.used).toBe(i);
+      }
 
-      const r2 = await monetizationService.checkAndRecordRevision();
-      expect(r2.allowed).toBe(true);
-      expect(r2.used).toBe(2);
-
-      const r3 = await monetizationService.checkAndRecordRevision();
-      expect(r3.allowed).toBe(true);
-      expect(r3.used).toBe(3);
-
-      // 4e révision -> REFUS STRICT
-      const r4 = await monetizationService.checkAndRecordRevision();
-      expect(r4.allowed).toBe(false);
-      expect(r4.used).toBe(3);
-      expect(r4.message).toContain('limite');
+      // 5e révision -> REFUS STRICT
+      const r5 = await monetizationService.checkAndRecordRevision();
+      expect(r5.allowed).toBe(false);
+      expect(r5.used).toBe(4);
+      expect(r5.message).toContain('limite');
     });
 
     it('Intensif : autorise 10 révisions et bloque la 11e tentative', async () => {
@@ -340,19 +334,19 @@ describe('REVIZO — AUDIT FINAL PRODUIT + UX + MONÉTISATION', () => {
       expect(r11.used).toBe(10);
     });
 
-    it('Premium : autorise 20 révisions et bloque la 21e tentative', async () => {
+    it('Premium : autorise 18 révisions et bloque la 19e tentative', async () => {
       await monetizationService.activateSubscription('premium');
 
-      for (let i = 1; i <= 20; i++) {
+      for (let i = 1; i <= 18; i++) {
         const r = await monetizationService.checkAndRecordRevision();
         expect(r.allowed).toBe(true);
         expect(r.used).toBe(i);
       }
 
-      // 21e tentative -> REFUS
-      const r21 = await monetizationService.checkAndRecordRevision();
-      expect(r21.allowed).toBe(false);
-      expect(r21.used).toBe(20);
+      // 19e tentative -> REFUS
+      const r19 = await monetizationService.checkAndRecordRevision();
+      expect(r19.allowed).toBe(false);
+      expect(r19.used).toBe(18);
     });
   });
 
@@ -397,6 +391,55 @@ describe('REVIZO — AUDIT FINAL PRODUIT + UX + MONÉTISATION', () => {
 
       expect(stateExpired.diamonds.balance).toBe(diamondsBeforeExpiration);
       expect(stateExpired.energy.maxEnergy).toBe(3);
+    });
+  });
+
+  // =========================================================================
+  // 9. RÈGLE STRICTE D'ESSAI GRATUIT (1 SEUL IMPORT À VIE POUR NON-ABONNÉS)
+  // =========================================================================
+  describe('9. Règle Stricte d’Essai Gratuit (1 Seul Import à Vie)', () => {
+    it('autorise exactement 1 import de cours d’essai pour un compte non abonné', async () => {
+      // Compte initial sans abonnement payant et sans aucun cours existant
+      (dataProvider as any).courses = [];
+
+      const usage1 = await dataProvider.recordRevisionUsage();
+      expect(usage1.allowed).toBe(true);
+      expect(usage1.trialExhausted).toBe(false);
+
+      // Simuler l'enregistrement du 1er cours
+      const user = await dataProvider.getProfile();
+      await (dataProvider as any).courses.unshift({
+        id: 'crs-trial-1',
+        userId: user.id,
+        title: 'Premier cours d’essai gratuit',
+        subjectName: 'Histoire',
+        status: 'ready'
+      });
+
+      // 2e tentative d'import : DOIT ÊTRE BLOQUÉE STRICTEMENT
+      const usage2 = await dataProvider.recordRevisionUsage();
+      expect(usage2.allowed).toBe(false);
+      expect(usage2.trialExhausted).toBe(true);
+      expect(usage2.error).toBe('free_trial_exhausted');
+      expect(usage2.message).toContain('essai gratuit');
+    });
+
+    it('ne bloque JAMAIS un abonné payant actif même avec plusieurs cours existants', async () => {
+      // Activer un forfait payant (ex: Essentiel 4/j ou Premium 18/j)
+      await monetizationService.activateSubscription('premium');
+      const user = await dataProvider.getProfile();
+
+      // Ajouter plusieurs cours existants
+      await (dataProvider as any).courses.unshift(
+        { id: 'crs-sub-1', userId: user.id, title: 'Cours 1', subjectName: 'Maths' },
+        { id: 'crs-sub-2', userId: user.id, title: 'Cours 2', subjectName: 'SVT' }
+      );
+
+      // Vérifier que la règle d'essai gratuit ne s'applique pas
+      const usageSub = await dataProvider.recordRevisionUsage();
+      expect(usageSub.allowed).toBe(true);
+      expect(usageSub.trialExhausted).toBe(false);
+      expect(usageSub.limit).toBe(18); // Quota officiel Premium
     });
   });
 });

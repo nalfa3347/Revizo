@@ -29,14 +29,14 @@ describe('REVIZO — Système Économique, Abonnements, Énergie, Diamants & Par
       expect(state.energy.maxEnergy).toBe(3);
     });
 
-    it('active le forfait ESSENTIEL avec les règles officielles (1 000 FCFA, 3 révisions/j, 10 ⚡ max, 10 💎 offerts)', async () => {
+    it('active le forfait ESSENTIEL avec les règles officielles (1 000 FCFA, 4 révisions/j, 10 ⚡ max, 10 💎 offerts)', async () => {
       const initialDiamonds = (await economyService.getEconomyState()).diamonds.balance;
       const state = await monetizationService.subscribe('essentiel', 'fedapay_test', 'sub-essentiel-01');
 
       expect(state.subscription.plan).toBe('essentiel');
       expect(state.subscription.price).toBe(1000);
       expect(state.subscription.status).toBe('active');
-      expect(state.energy.dailyRevisionLimit).toBe(3);
+      expect(state.energy.dailyRevisionLimit).toBe(4);
       expect(state.energy.maxEnergy).toBe(10);
       // Diamants de bienvenue (+10 💎)
       expect(state.diamonds.balance).toBe(initialDiamonds + 10);
@@ -53,13 +53,13 @@ describe('REVIZO — Système Économique, Abonnements, Énergie, Diamants & Par
       expect(state.diamonds.balance).toBe(initialDiamonds + 30);
     });
 
-    it('active le forfait PREMIUM (5 000 FCFA, 20 révisions/j, 30 ⚡ max, 60 💎 offerts)', async () => {
+    it('active le forfait PREMIUM (5 000 FCFA, 18 révisions/j, 30 ⚡ max, 60 💎 offerts)', async () => {
       const initialDiamonds = (await economyService.getEconomyState()).diamonds.balance;
       const state = await monetizationService.subscribe('premium', 'fedapay_test', 'sub-premium-01');
 
       expect(state.subscription.plan).toBe('premium');
       expect(state.subscription.price).toBe(5000);
-      expect(state.energy.dailyRevisionLimit).toBe(20);
+      expect(state.energy.dailyRevisionLimit).toBe(18);
       expect(state.energy.maxEnergy).toBe(30);
       expect(state.diamonds.balance).toBe(initialDiamonds + 60);
     });
@@ -68,7 +68,7 @@ describe('REVIZO — Système Économique, Abonnements, Énergie, Diamants & Par
       await monetizationService.subscribe('essentiel', 'fedapay_test', 'sub-chg-01');
       let state = await economyService.getEconomyState();
       expect(state.subscription.plan).toBe('essentiel');
-      expect(state.energy.dailyRevisionLimit).toBe(3);
+      expect(state.energy.dailyRevisionLimit).toBe(4);
 
       // Upgrade vers Intensif
       state = await monetizationService.subscribe('intensif', 'fedapay_test', 'sub-chg-02');
@@ -160,23 +160,17 @@ describe('REVIZO — Système Économique, Abonnements, Énergie, Diamants & Par
 
     it('contrôle strictement le quota de révisions quotidiennes', async () => {
       await monetizationService.subscribe('essentiel', 'fedapay_test', 'sub-limit-test');
-      // Essentiel = 3 révisions max
-      const r1 = await monetizationService.checkAndRecordRevision();
-      expect(r1.allowed).toBe(true);
-      expect(r1.used).toBe(1);
+      // Essentiel = 4 révisions max
+      for (let i = 1; i <= 4; i++) {
+        const r = await monetizationService.checkAndRecordRevision();
+        expect(r.allowed).toBe(true);
+        expect(r.used).toBe(i);
+      }
 
-      const r2 = await monetizationService.checkAndRecordRevision();
-      expect(r2.allowed).toBe(true);
-      expect(r2.used).toBe(2);
-
-      const r3 = await monetizationService.checkAndRecordRevision();
-      expect(r3.allowed).toBe(true);
-      expect(r3.used).toBe(3);
-
-      // 4e révision : doit être refusée
-      const r4 = await monetizationService.checkAndRecordRevision();
-      expect(r4.allowed).toBe(false);
-      expect(r4.message).toContain('Tu as atteint');
+      // 5e révision : doit être refusée
+      const r5 = await monetizationService.checkAndRecordRevision();
+      expect(r5.allowed).toBe(false);
+      expect(r5.message).toContain('Tu as atteint');
     });
   });
 

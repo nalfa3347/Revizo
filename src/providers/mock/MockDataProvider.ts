@@ -614,7 +614,7 @@ export class MockDataProvider implements IDataProvider {
 
     if (plan === 'essentiel') {
       price = 1000;
-      limit = 3;
+      limit = 4;
       maxEnergy = 10;
       initialDiamonds = 10;
     } else if (plan === 'intensif') {
@@ -624,7 +624,7 @@ export class MockDataProvider implements IDataProvider {
       initialDiamonds = 30;
     } else if (plan === 'premium') {
       price = 5000;
-      limit = 20;
+      limit = 18;
       maxEnergy = 30;
       initialDiamonds = 60;
     }
@@ -926,6 +926,25 @@ export class MockDataProvider implements IDataProvider {
     const userId = this.profile.id;
     this.initUserEconomy(userId);
 
+    const sub = this.subscriptions.get(userId);
+    const isPaidActive = sub && sub.status === 'active' && sub.plan !== 'free';
+
+    // Règle TÂCHE 4 : Utilisateur non abonné -> Exactement 1 cours d'essai gratuit à vie
+    if (!isPaidActive) {
+      const userCoursesCount = this.courses.filter(c => c.userId === userId).length;
+      if (userCoursesCount >= 1) {
+        return {
+          allowed: false,
+          limit: 1,
+          used: userCoursesCount,
+          remaining: 0,
+          error: 'free_trial_exhausted',
+          trialExhausted: true,
+          message: "Tu as déjà profité de ton essai gratuit pour ton premier cours. Choisis un forfait pour continuer à réviser avec RÉVIZO."
+        };
+      }
+    }
+
     const energy = this.userEnergy.get(userId)!;
     if (energy.dailyRevisionUsed >= energy.dailyRevisionLimit) {
       return {
@@ -933,6 +952,7 @@ export class MockDataProvider implements IDataProvider {
         limit: energy.dailyRevisionLimit,
         used: energy.dailyRevisionUsed,
         remaining: 0,
+        trialExhausted: false,
         error: 'daily_limit_reached',
         message: `Tu as atteint ta limite de ${energy.dailyRevisionLimit} révisions du jour. Ton compteur sera réinitialisé demain.`
       };
@@ -943,6 +963,7 @@ export class MockDataProvider implements IDataProvider {
 
     return {
       allowed: true,
+      trialExhausted: false,
       limit: energy.dailyRevisionLimit,
       used: energy.dailyRevisionUsed,
       remaining: energy.dailyRevisionRemaining

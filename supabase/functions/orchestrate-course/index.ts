@@ -379,7 +379,8 @@ Deno.serve(async (req: Request) => {
       subjectName: inputSubject,
       fileBase64,
       mimeType,
-      rawText
+      rawText,
+      pageCount
     } = body;
 
     if (!courseId) {
@@ -396,7 +397,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // CONTRÔLE SERVEUR STRICT DU QUOTA QUOTIDIEN DE RÉVISIONS DE L'ÉLÈVE
+    // GARDE-FOU VOLUME : Limite stricte de 20 pages par révision pour garantir une qualité optimale à 100%
+    if (pageCount && pageCount > 20) {
+      return new Response(JSON.stringify({
+        error: `Ce cours fait ${pageCount} pages et dépasse la limite de 20 pages par révision. Découpe-le en chapitres pour garantir une révision complète, ultra-précise et sans omission.`,
+        tooManyPages: true,
+        pageCount,
+        maxPages: 20
+      }), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // CONTRÔLE SERVEUR STRICT DU QUOTA ET DE L'ESSAI GRATUIT (1 SEUL IMPORT À VIE POUR LES NON-ABONNÉS)
     const { data: usageCheck, error: usageErr } = await userClient.rpc("record_revision_usage", {
       p_user_id: userId
     });
@@ -404,13 +418,15 @@ Deno.serve(async (req: Request) => {
     if (usageErr) {
       console.error("Avertissement quota révision:", usageErr);
     } else if (usageCheck && !usageCheck.allowed) {
+      const isTrialExhausted = usageCheck.trialExhausted || usageCheck.error === "free_trial_exhausted";
       return new Response(JSON.stringify({
         error: usageCheck.message || "Tu as atteint ta limite de révisions du jour. Ton compteur sera réinitialisé demain.",
         quotaReached: true,
+        trialExhausted: isTrialExhausted,
         limit: usageCheck.limit,
         used: usageCheck.used
       }), {
-        status: 429,
+        status: isTrialExhausted ? 403 : 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }

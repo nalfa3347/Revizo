@@ -24,6 +24,7 @@ import { FriendlyNotice } from '../common/FriendlyNotice';
 import { ImportProcessingModal } from '../import/ImportProcessingModal';
 import { QuizPlayerModal } from '../quiz/QuizPlayerModal';
 import { PipelineProgress, PipelineResult } from '../../services/ai/AIOrchestrator';
+import { getPdfPageCount, MAX_REVISION_PAGES } from '../../utils/documentUtils';
 
 interface RevisionViewProps {
   onNavigateToCourses: () => void;
@@ -42,7 +43,7 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
   registerBackHandler,
   initialCourse
 }) => {
-  const { revisionService, courseService, network, aiOrchestrator, profile, economyService, refreshEconomy } = useData();
+  const { revisionService, courseService, network, aiOrchestrator, profile, economyService, refreshEconomy, economy } = useData();
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeRevision, setActiveRevision] = useState<Revision | null>(null);
@@ -218,13 +219,32 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
     }
   };
 
-  // Déclencheurs des boutons d'action d'import avec garde hors-connexion (Phase 25)
+  // Détection du statut d'abonnement payant actif vs essai gratuit strict (1 import à vie pour les non-abonnés)
+  const isPaidPlanActive = economy?.subscription?.status === 'active' && economy?.subscription?.plan !== 'free';
+  const hasExhaustedFreeTrial = !isPaidPlanActive && ((combinedCourses && combinedCourses.length >= 1) || (realCourses && realCourses.length >= 1));
+
+  // Déclencheurs des boutons d'action d'import avec garde hors-connexion (Phase 25) et paywall essai gratuit (Tâche 4)
   const handleTriggerPdf = () => {
     if (!network.isOnline) {
       setOfflineNotice("Une connexion Internet est requise pour importer et analyser un cours avec l’IA.");
       return;
     }
     setOfflineNotice(null);
+
+    // Blocage strict de l'essai gratuit au-delà d'1 cours : affichage direct des forfaits FedaPay
+    if (hasExhaustedFreeTrial) {
+      if (onNavigateToSubscription) {
+        onNavigateToSubscription();
+      } else {
+        setPipelineProgress({
+          stage: 'error',
+          message: 'Tu as déjà profité de ton essai gratuit pour ton premier cours. Choisis un forfait pour continuer à réviser avec RÉVIZO.',
+          percent: 0
+        });
+      }
+      return;
+    }
+
     fileInputPdfRef.current?.click();
   };
 
@@ -234,6 +254,21 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
       return;
     }
     setOfflineNotice(null);
+
+    // Blocage strict de l'essai gratuit au-delà d'1 cours : affichage direct des forfaits FedaPay
+    if (hasExhaustedFreeTrial) {
+      if (onNavigateToSubscription) {
+        onNavigateToSubscription();
+      } else {
+        setPipelineProgress({
+          stage: 'error',
+          message: 'Tu as déjà profité de ton essai gratuit pour ton premier cours. Choisis un forfait pour continuer à réviser avec RÉVIZO.',
+          percent: 0
+        });
+      }
+      return;
+    }
+
     fileInputCameraRef.current?.click();
   };
 
@@ -247,6 +282,31 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
 
     setImportingFileName(file.name);
     setPipelineResult(null);
+
+    // 1. Contrôle strict de l'essai gratuit côté frontend (1 seul import à vie pour non-abonnés)
+    if (hasExhaustedFreeTrial) {
+      setPipelineProgress({
+        stage: 'error',
+        message: 'Tu as déjà profité de ton essai gratuit pour ton premier cours. Choisis un forfait pour continuer à réviser avec RÉVIZO.',
+        percent: 0
+      });
+      return;
+    }
+
+    // 2. Contrôle strict de la volumétrie : limite à 20 pages max pour garantir une révision sans omission (Tâche 3)
+    let pageCount = 1;
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+    if (isPdf) {
+      pageCount = await getPdfPageCount(file);
+      if (pageCount > MAX_REVISION_PAGES) {
+        setPipelineProgress({
+          stage: 'error',
+          message: `Ce cours fait ${pageCount} pages et dépasse la limite de ${MAX_REVISION_PAGES} pages par révision. Découpe-le en chapitres pour garantir une révision complète, ultra-précise et sans omission.`,
+          percent: 0
+        });
+        return;
+      }
+    }
 
     // Initialisation du statut de traitement
     setPipelineProgress({
@@ -267,16 +327,22 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
       }
       const result = await aiOrchestrator.processCourseDocument(file, userId, (p) => {
         setPipelineProgress(p);
-      });
+      }, pageCount);
       setPipelineResult(result);
       setImportedCourses(prev => [result.course, ...prev]);
     } catch (err: any) {
       console.error('Erreur lors du traitement du document :', err);
+      const isTrialExhausted = err?.trialExhausted || err?.message?.includes('essai gratuit') || err?.message?.includes('Choisis un forfait');
+      const isTooManyPages = err?.tooManyPages || err?.message?.includes('limite de 20 pages');
       const isQuota = err?.status === 429 || err?.quotaReached || err?.message?.includes('quota') || err?.message?.includes('limite de révisions');
       const isOverloaded = err?.message?.includes('très demandé');
       
       let displayMessage = 'Impossible de lire le document. Vérifie son format et réessaie.';
-      if (err?.message && !err.message.includes('{"') && !err.message.includes('fetch') && !err.message.includes('Error:')) {
+      if (isTrialExhausted) {
+        displayMessage = 'Tu as déjà profité de ton essai gratuit pour ton premier cours. Choisis un forfait pour continuer à réviser avec RÉVIZO.';
+      } else if (isTooManyPages) {
+        displayMessage = err.message || `Ce cours dépasse la limite de ${MAX_REVISION_PAGES} pages par révision. Découpe-le en chapitres pour garantir une révision complète.`;
+      } else if (err?.message && !err.message.includes('{"') && !err.message.includes('fetch') && !err.message.includes('Error:')) {
         displayMessage = err.message;
       } else if (isOverloaded) {
         displayMessage = 'Le service est très demandé, réessaie dans quelques instants.';

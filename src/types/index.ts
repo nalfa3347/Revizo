@@ -499,18 +499,19 @@ export interface RevisionUsageResult {
   remaining: number;
   error?: string;
   message?: string;
+  trialExhausted?: boolean;
 }
 
 export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanDetails> = {
   free: {
     id: 'free',
-    name: 'Free',
+    name: 'Essai Gratuit',
     priceFcfa: 0,
     dailyRevisionLimit: 1,
     maxEnergy: 3,
     initialDiamonds: 10,
     features: [
-      '1 révision intelligente par jour',
+      '1 cours d\'essai gratuit à vie',
       '3 énergies ⚡ max',
       'Accès aux quiz essentiels',
       'Téléchargement PDF des fiches'
@@ -520,11 +521,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanDetails> = {
     id: 'essentiel',
     name: 'Essentiel',
     priceFcfa: 1000,
-    dailyRevisionLimit: 3,
+    dailyRevisionLimit: 4,
     maxEnergy: 10,
     initialDiamonds: 10,
     features: [
-      '3 révisions intelligentes par jour',
+      '4 révisions intelligentes par jour',
       '10 énergies ⚡ max',
       '10 diamants 💎 de bienvenue',
       'Génération complète de quiz & exercices',
@@ -533,7 +534,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanDetails> = {
   },
   intensif: {
     id: 'intensif',
-    name: 'Intensif',
+    name: 'Pro',
     priceFcfa: 3000,
     dailyRevisionLimit: 10,
     maxEnergy: 20,
@@ -553,12 +554,12 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanDetails> = {
     id: 'premium',
     name: 'Premium',
     priceFcfa: 5000,
-    dailyRevisionLimit: 20,
+    dailyRevisionLimit: 18,
     maxEnergy: 30,
     initialDiamonds: 60,
     badge: 'Expérience complète',
     features: [
-      '20 révisions intelligentes par jour',
+      '18 révisions intelligentes par jour',
       '30 énergies ⚡ max',
       '60 diamants 💎 de bienvenue',
       'L\'expérience d\'apprentissage ultime',

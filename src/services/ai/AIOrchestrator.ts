@@ -61,7 +61,8 @@ export class AIOrchestrator {
   async processCourseDocument(
     file: File,
     userId: string,
-    onProgress?: (progress: PipelineProgress) => void
+    onProgress?: (progress: PipelineProgress) => void,
+    pageCount?: number
   ): Promise<PipelineResult> {
     const providerType = getActiveProviderType();
 
@@ -70,7 +71,7 @@ export class AIOrchestrator {
     // ========================================================
     if (providerType === 'supabase') {
       try {
-        const result = await this.geminiEdgeOrchestrator.processCourseDocument(file, userId, onProgress);
+        const result = await this.geminiEdgeOrchestrator.processCourseDocument(file, userId, onProgress, pageCount);
         return result;
       } catch (err: any) {
         // En mode Supabase, AUCUN fallback silencieux vers MockAIProvider

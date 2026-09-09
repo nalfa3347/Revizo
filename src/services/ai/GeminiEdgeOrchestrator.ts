@@ -9,7 +9,8 @@ export class GeminiEdgeOrchestrator {
   async processCourseDocument(
     file: File,
     userId: string,
-    onProgress?: (progress: PipelineProgress) => void
+    onProgress?: (progress: PipelineProgress) => void,
+    pageCount?: number
   ): Promise<PipelineResult> {
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -95,7 +96,8 @@ export class GeminiEdgeOrchestrator {
           title,
           subjectName: 'Général',
           fileBase64,
-          mimeType
+          mimeType,
+          pageCount
         }
       });
 
@@ -107,19 +109,26 @@ export class GeminiEdgeOrchestrator {
 
       if (error) {
         let errMessage = "Nous n'avons pas réussi à analyser ton cours. Réessaie dans quelques instants.";
+        let isTrialExhausted = false;
+        let isTooManyPages = false;
         try {
           // Extraire le message retourné par l'Edge Function
           if (error.context) {
             const ctxText = await error.context.text();
             const ctxJson = JSON.parse(ctxText);
             if (ctxJson.error) errMessage = ctxJson.error;
+            if (ctxJson.trialExhausted) isTrialExhausted = true;
+            if (ctxJson.tooManyPages) isTooManyPages = true;
           }
         } catch {}
 
         if (mimeType.startsWith('image/') && (errMessage.includes('claire') || errMessage.includes('nette'))) {
           throw new Error("La photo n'est pas assez claire pour être analysée. Essaie avec une photo plus nette.");
         }
-        throw new Error(errMessage);
+        const customErr: any = new Error(errMessage);
+        customErr.trialExhausted = isTrialExhausted;
+        customErr.tooManyPages = isTooManyPages;
+        throw customErr;
       }
 
       if (!data || !data.success) {

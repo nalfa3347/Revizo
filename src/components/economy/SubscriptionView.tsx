@@ -261,7 +261,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack }) =>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
                 <Check size={16} color="#10B981" strokeWidth={2.5} />
-                <span><strong>3 révisions</strong> intelligentes par jour</span>
+                <span><strong>4 révisions</strong> intelligentes par jour</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
                 <Check size={16} color="#10B981" strokeWidth={2.5} />
@@ -449,7 +449,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack }) =>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
                 <Check size={16} color="#10B981" strokeWidth={2.5} />
-                <span><strong>20 révisions</strong> intelligentes par jour</span>
+                <span><strong>18 révisions</strong> intelligentes par jour</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
                 <Check size={16} color="#10B981" strokeWidth={2.5} />
