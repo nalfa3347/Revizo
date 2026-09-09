@@ -855,9 +855,12 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
       4. **Anti-fraude absolue** :
          - Auto-parrainage formellement interdit (`referrer_id = referee_id` rejeté).
          - Un même compte filleul B ne peut utiliser qu'un seul code, une seule fois à vie (`referred_by_user_id IS NOT NULL` rejeté).
-      5. **Interface utilisateur** :
-         - Champ *"Code d'invitation d'un ami (facultatif)"* intégré dans le formulaire d'inscription (`AuthView.tsx`).
-         - Vue dédiée *"Inviter un ami"* (`ReferralView.tsx`) détaillant les deux paliers (5 💎 à l'inscription + 10 💎 au 1er abonnement) avec bouton de partage natif/copie de lien.
+      5. **Interface utilisateur & Points d'Accès Visibles mais Non-Agressifs** :
+         - **Sur l'Accueil (`HomeView.tsx`)** : Carte dédiée `home-referral-card` entre les statistiques et les matières : affiche les avantages (+5 💎 inscription / +10 💎 abonnement), le code avec copie en un clic, et un bouton direct *"Partager l'app"* (utilise `navigator.share` sur mobile et fallback vers `ReferralView`).
+         - **En haut du Profil (`ProfileView.tsx`)** : Bannière bien visible `profile-referral-banner` située immédiatement sous la carte d'identité de l'élève pour un accès instantané sans avoir à scroller.
+         - **Dans la vue Mes Diamants (`DiamondsView.tsx`)** : Mention explicite des deux paliers de parrainage et bouton direct d'invitation.
+         - **Au formulaire d'inscription (`AuthView.tsx`)** : Champ optionnel *"Code d'invitation d'un ami"*.
+         - **Vue détaillée (`ReferralView.tsx`)** : Récapitulatif complet des parrainages, gains cumulés, et boutons de partage WhatsApp/SMS/copie de lien.
     - *Architecture Backend & Base de données* :
       - Migration SQL `20260909000010_revizo_referral_signup_bonus.sql` déployée sur Supabase.
       - Fonction PostgreSQL `apply_referral_code` sécurisée avec transactions atomiques et idempotence (`claim_reward`).

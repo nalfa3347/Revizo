@@ -14,7 +14,9 @@ import {
   Check,
   X,
   ArrowLeft,
-  Calendar
+  Calendar,
+  Gift,
+  Share2
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { UserGoal } from '../../services/UserService';
@@ -237,6 +239,79 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* BANNIÈRE PARRAINAGE & PARTAGE (Visible & Non-Agressive) */}
+      {onNavigateToReferral && (
+        <div
+          className="profile-referral-banner"
+          onClick={onNavigateToReferral}
+          style={{ cursor: 'pointer' }}
+          id="profile-referral-banner"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                backgroundColor: '#FEF3C7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#D97706',
+                flexShrink: 0
+              }}
+            >
+              <Gift size={22} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#111827' }}>
+                  Inviter mes amis & Gagner des diamants
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    color: '#C2410C',
+                    backgroundColor: '#FFEDD5',
+                    padding: '2px 8px',
+                    borderRadius: '999px'
+                  }}
+                >
+                  +5 💎 & +10 💎
+                </span>
+              </div>
+              <p style={{ fontSize: '0.82rem', color: '#6B7280', margin: 0, lineHeight: 1.4 }}>
+                Donne 5 💎 à un ami dès son inscription et reçois 5 💎, puis 10 💎 dès son premier abonnement.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={e => {
+              e.stopPropagation();
+              onNavigateToReferral();
+            }}
+            style={{
+              padding: '8px 16px',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0,
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E5E7EB'
+            }}
+          >
+            <Share2 size={15} color="#EA580C" />
+            <span>Partager l'app</span>
+          </button>
         </div>
       )}
 

@@ -163,6 +163,7 @@ const MainAppContent: React.FC<MainAppContentProps> = ({ onLogout }) => {
               setCurrentTab('revisions');
             }
           }}
+          onNavigateToReferral={() => setCurrentTab('referral')}
         />
       )}
 

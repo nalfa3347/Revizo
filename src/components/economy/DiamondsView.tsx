@@ -9,7 +9,8 @@ import {
   Clock,
   Sparkles,
   Award,
-  ChevronRight
+  ChevronRight,
+  Share2
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { DiamondTransaction, EnergyTransaction } from '../../types';
@@ -382,6 +383,23 @@ export const DiamondsView: React.FC<DiamondsViewProps> = ({
             style={{
               padding: '12px 14px',
               borderRadius: '12px',
+              backgroundColor: '#FFFBEB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: onNavigateToReferral ? 'pointer' : 'default',
+              border: '1px solid #FDE68A'
+            }}
+          >
+            <span style={{ fontSize: '0.85rem', color: '#92400E', fontWeight: 700 }}>🤝 Inscription d'un ami (Palier 1)</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#D97706', backgroundColor: '#FEF3C7', padding: '3px 8px', borderRadius: '999px' }}>+5 💎</span>
+          </div>
+
+          <div
+            onClick={onNavigateToReferral}
+            style={{
+              padding: '12px 14px',
+              borderRadius: '12px',
               backgroundColor: '#FFF7ED',
               display: 'flex',
               alignItems: 'center',
@@ -390,10 +408,54 @@ export const DiamondsView: React.FC<DiamondsViewProps> = ({
               border: '1px solid #FFEDD5'
             }}
           >
-            <span style={{ fontSize: '0.85rem', color: '#9A3412', fontWeight: 700 }}>🤝 1er abonnement d'un ami parrainé</span>
+            <span style={{ fontSize: '0.85rem', color: '#9A3412', fontWeight: 700 }}>⭐ 1er abonnement d'un ami (Palier 2)</span>
             <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#EA580C', backgroundColor: '#FFFFFF', padding: '3px 8px', borderRadius: '999px' }}>+10 💎</span>
           </div>
         </div>
+
+        {/* Bouton direct de parrainage */}
+        {onNavigateToReferral && (
+          <div
+            onClick={onNavigateToReferral}
+            style={{
+              marginTop: '16px',
+              padding: '14px 18px',
+              borderRadius: '14px',
+              backgroundColor: '#FFFBEB',
+              border: '1.5px dashed #F59E0B',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#92400E' }}>
+                🎁 Invite tes camarades sur REVIZO
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#B45309', marginTop: '2px' }}>
+                Donne 5 💎 à un ami dès son inscription et reçois 5 💎, puis 10 💎 dès son premier abonnement.
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{
+                padding: '8px 16px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Share2 size={14} />
+              <span>Partager l'app</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Bannière CTA vers l'abonnement si besoin de plus de révisions quotidiennes */}

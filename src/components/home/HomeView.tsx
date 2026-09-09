@@ -8,7 +8,11 @@ import {
   BookOpen,
   FlaskConical,
   GraduationCap,
-  ArrowRight
+  ArrowRight,
+  Gift,
+  Share2,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Target3DIllustration } from '../common/Target3DIllustration';
@@ -17,14 +21,20 @@ import { Subject, CourseConcept } from '../../types';
 interface HomeViewProps {
   onNavigateToCourses: () => void;
   onStartRevision: () => void;
+  onNavigateToReferral?: () => void;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStartRevision }) => {
-  const { profile, progress, courseService, dataProvider } = useData();
+export const HomeView: React.FC<HomeViewProps> = ({
+  onNavigateToCourses,
+  onStartRevision,
+  onNavigateToReferral
+}) => {
+  const { profile, progress, economy, courseService, dataProvider } = useData();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [coursesCount, setCoursesCount] = useState<number>(0);
   const [weakConcepts, setWeakConcepts] = useState<CourseConcept[]>([]);
+  const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
@@ -91,6 +101,45 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStart
       : coursesCount > 0
       ? 'Effectue ta session de révision quotidienne pour maintenir ta série active.'
       : 'Ajoute ton premier cours pour commencer tes révisions et débloquer les quiz.';
+
+  // Code et partage de parrainage
+  const referralCode = economy?.referral.referralCode || 'REV-REVIZO';
+
+  const handleCopyCode = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(referralCode);
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 2500);
+      }
+    } catch {
+      // Ignorer si clipboard non supporté
+    }
+  };
+
+  const handleShareApp = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/?ref=${referralCode}` : 'https://revizo.app';
+    const shareData = {
+      title: 'Révise plus vite et prépare tes examens avec REVIZO !',
+      text: `Rejoins-moi sur REVIZO pour réviser tes cours avec l'IA et t'entraîner avec des quiz ! Utilise mon code d'invitation ${referralCode} pour recevoir 5 diamants 💎 offerts à ton inscription.`,
+      url: shareUrl
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // Annulé par l'utilisateur ou non supporté
+      }
+    }
+
+    if (onNavigateToReferral) {
+      onNavigateToReferral();
+    }
+  };
 
   return (
     <div className="home-view">
@@ -236,6 +285,51 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigateToCourses, onStart
             <div className="mobile-stat-val">Niveau {level}</div>
             <div className="mobile-stat-lbl">{xpToNext} XP restants</div>
           </div>
+        </div>
+      </div>
+
+      {/* 2. bis CARTE D'INVITATION & PARTAGE (Visible & Non-Agressive) */}
+      <div
+        className="home-referral-card"
+        onClick={onNavigateToReferral}
+        style={{ cursor: onNavigateToReferral ? 'pointer' : 'default' }}
+      >
+        <div className="home-referral-left">
+          <div className="home-referral-icon-box">
+            <Gift size={24} />
+          </div>
+          <div className="home-referral-text-wrap">
+            <div className="home-referral-tag-row">
+              <span className="home-referral-tag">🎁 Inviter un ami</span>
+              <span className="home-referral-bonus-badge">+5 💎 à l'inscription</span>
+            </div>
+            <h3 className="home-referral-title">Partage REVIZO avec tes camarades</h3>
+            <p className="home-referral-desc">
+              Donne <strong>5 💎</strong> à ton ami et reçois <strong>5 💎</strong> dès son inscription, puis <strong>+10 💎</strong> supplémentaires lorsqu'il prend son 1er abonnement.
+            </p>
+          </div>
+        </div>
+
+        <div className="home-referral-actions" onClick={e => e.stopPropagation()}>
+          <button
+            type="button"
+            className="home-referral-code-pill"
+            onClick={handleCopyCode}
+            title="Cliquer pour copier ton code de parrainage"
+          >
+            {copiedCode ? <Check size={14} color="#059669" /> : <Copy size={14} />}
+            <span>{copiedCode ? 'Code copié !' : referralCode}</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-home-share"
+            onClick={handleShareApp}
+            title="Partager l'application et ton code d'invitation"
+          >
+            <Share2 size={16} />
+            <span>Partager l'app</span>
+          </button>
         </div>
       </div>
 
