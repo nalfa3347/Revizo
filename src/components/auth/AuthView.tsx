@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Mail,
   Phone,
@@ -13,7 +13,8 @@ import {
   AlertCircle,
   ShieldCheck,
   Target,
-  Zap
+  Zap,
+  Gift
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getActiveProviderType } from '../../providers/providerFactory';
@@ -54,6 +55,19 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [signupDisplayName, setSignupDisplayName] = useState('');
   const [signupGrade, setSignupGrade] = useState<SchoolLevel>('3e');
   const [signupReferralCode, setSignupReferralCode] = useState('');
+  const [showReferralField, setShowReferralField] = useState(false);
+
+  // Détection automatique si l'utilisateur arrive avec un lien de parrainage (?ref=REV-XXXXXX)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const refCode = params.get('ref') || params.get('code');
+      if (refCode && refCode.trim()) {
+        setSignupReferralCode(refCode.trim().toUpperCase());
+        setShowReferralField(true);
+      }
+    }
+  }, []);
 
   // --- ÉTAT ONBOARDING ---
   const [createdUserName, setCreatedUserName] = useState('');
@@ -671,26 +685,81 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 </div>
               </div>
 
-              {/* ÉTAPE 5 : CODE DE PARRAINAGE (FACULTATIF) */}
-              <div className="auth-field-group">
-                <label htmlFor="signup-referral" className="auth-field-label">
-                  5. Code d'invitation d'un ami (facultatif)
-                </label>
-                <div className="auth-input-wrapper">
-                  <Sparkles size={18} className="auth-input-icon" />
-                  <input
-                    id="signup-referral"
-                    type="text"
-                    value={signupReferralCode}
-                    onChange={e => setSignupReferralCode(e.target.value.toUpperCase())}
-                    placeholder="ex : REV-ABC123"
-                    className="auth-input"
-                    style={{ letterSpacing: '0.04em', textTransform: 'uppercase' }}
-                  />
-                </div>
-                <span className="auth-field-hint">
-                  Reçois immédiatement +5 💎 et fais gagner +5 💎 à ton parrain dès ton inscription.
-                </span>
+              {/* CODE DE PARRAINAGE (TOTALEMENT FACULTATIF & DÉPLIABLE) */}
+              <div style={{ marginTop: '16px', marginBottom: '8px' }}>
+                {!showReferralField ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowReferralField(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#D97706',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      padding: '4px 0',
+                      transition: 'color 0.15s ease'
+                    }}
+                    id="btn-toggle-referral-code"
+                  >
+                    <Gift size={15} />
+                    <span>Tu as un code d'invitation ? (Facultatif)</span>
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      backgroundColor: '#FFFDF8',
+                      border: '1.5px dashed #FDE68A',
+                      borderRadius: '14px',
+                      padding: '12px 14px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <label htmlFor="signup-referral" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#92400E', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Gift size={15} color="#D97706" />
+                        <span>Code d'invitation d'un ami (Facultatif)</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowReferralField(false);
+                          setSignupReferralCode('');
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#9CA3AF',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          padding: '2px 6px'
+                        }}
+                        id="btn-hide-referral-code"
+                      >
+                        Masquer
+                      </button>
+                    </div>
+
+                    <div className="auth-input-wrapper">
+                      <Sparkles size={16} className="auth-input-icon" />
+                      <input
+                        id="signup-referral"
+                        type="text"
+                        value={signupReferralCode}
+                        onChange={e => setSignupReferralCode(e.target.value.toUpperCase())}
+                        placeholder="ex : REV-ABC123 (laisse vide si aucun)"
+                        className="auth-input"
+                        style={{ letterSpacing: '0.04em', textTransform: 'uppercase', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                    <span className="auth-field-hint" style={{ color: '#B45309', marginTop: '4px', fontSize: '0.78rem' }}>
+                      🎁 Reçois +5 💎 et offre +5 💎 à ton parrain dès ton inscription (laisse vide si tu n'en as pas).
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* BOUTON CRÉATION DE COMPTE */}

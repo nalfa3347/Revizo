@@ -878,6 +878,18 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - Suite COMPLÈTE `npm test` : 25/25 fichiers de test passés, **181 tests passés sur 181 (100% de succès)**.
     - Build de production `tsc -b && vite build` validé avec succès en 8.54s.
 
+- [x] **MISE À JOUR UX INSCRIPTION : CODE DE PARRAINAGE EXPLICITEMENT OPTIONNEL ET DÉPLIABLE** (Terminée et Validée le 2026-09-09)
+  - **Diagnostic** : Le code de parrainage était historiquement positionné sous la forme d'un champ d'étape numéroté "5. Code d'invitation d'un ami (facultatif)", ce qui créait une hésitation et une friction cognitive chez les nouveaux utilisateurs qui pensaient que l'application était sur invitation obligatoire.
+  - **Améliorations apportées (`src/components/auth/AuthView.tsx`)** :
+    1. Retrait de la numérotation "5." pour dissocier le parrainage du parcours obligatoire d'inscription (nom, email/téléphone, mot de passe, niveau).
+    2. Remplacement par un bouton/lien discret et replié par défaut : `🎁 Tu as un code d'invitation ? (Facultatif)`.
+    3. Dépliage à la demande d'un encart doux avec bouton `Masquer`, placeholder explicatif `ex : REV-ABC123 (laisse vide si aucun)` et indication claire des 5 diamants offerts.
+    4. Détection et pré-remplissage automatique lorsque le lien de partage contient le paramètre d'URL `?ref=REV-XXXXXX` ou `?code=REV-XXXXXX`.
+    5. Inscription instantanée sans code de parrainage (`referralCode: undefined`) sans aucun blocage ni message d'erreur.
+  - **Validation & Non-Régression** :
+    - Build de production `npm run build` : 100% succès (0 erreur TS).
+    - Suite de tests complète `npm test` : 25/25 fichiers passés, 181/181 tests validés.
+
 ---
 
 ## 🔒 RÈGLE IMPÉRATIVE DE SÉCURITÉ : GESTION DES SECRETS & CLÉS D'API
