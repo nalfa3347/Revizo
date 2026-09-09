@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, ArrowRight, Menu, X } from 'lucide-react';
+import { Globe, ArrowRight, Menu, X, Download } from 'lucide-react';
 import { RevizoLogo } from '../common/RevizoLogo';
 
 interface LandingNavbarProps {
@@ -164,6 +164,29 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({
           >
             FAQ
           </a>
+
+          <button
+            type="button"
+            className="landing-nav-link"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'none',
+              border: 'none',
+              color: 'var(--accent-orange, #EA580C)',
+              fontWeight: 700,
+              padding: '6px 0',
+              cursor: 'pointer'
+            }}
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              window.dispatchEvent(new CustomEvent('revizo:open-pwa-install'));
+            }}
+          >
+            <Download size={16} />
+            <span>Installer l'application</span>
+          </button>
 
           {/* SÉLECTEUR DE LANGUE DANS LE MENU MOBILE */}
           <div

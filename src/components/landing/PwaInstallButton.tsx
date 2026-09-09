@@ -59,14 +59,40 @@ export const PwaInstallButton: React.FC = () => {
       setIsVisible(true);
     }
 
+    // Écouter un déclenchement manuel (depuis le menu burger ou les boutons de l'interface)
+    const handleTriggerInstall = () => {
+      if (isIos || !deferredPrompt) {
+        setShowIosGuide(true);
+        return;
+      }
+      deferredPrompt.prompt().then(() => {
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            setIsInstalled(true);
+          }
+          setDeferredPrompt(null);
+        });
+      }).catch(() => {
+        setShowIosGuide(true);
+      });
+    };
+    window.addEventListener('revizo:open-pwa-install', handleTriggerInstall);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('revizo:open-pwa-install', handleTriggerInstall);
     };
-  }, []);
+  }, [deferredPrompt, isIos]);
 
   const handleInstallClick = async () => {
+    // Si on est sur iOS Safari (pas de prompt programmatique, guidage visuel immédiat)
+    if (isIos) {
+      setShowIosGuide(true);
+      return;
+    }
+
     // Si nous avons le prompt natif Chrome/Android
     if (deferredPrompt) {
       try {
@@ -82,12 +108,6 @@ export const PwaInstallButton: React.FC = () => {
       return;
     }
 
-    // Si on est sur iOS Safari (pas de prompt programmatique, guidage visuel immédiat)
-    if (isIos) {
-      setShowIosGuide(true);
-      return;
-    }
-
     // Pour navigateurs où le prompt natif n'est pas encore disponible
     // Si déjà installé
     if (isInstalled) {
@@ -99,63 +119,64 @@ export const PwaInstallButton: React.FC = () => {
     setShowIosGuide(true);
   };
 
-  if (isDismissed) return null;
-  if (!isVisible) return null;
+  const showBanner = isVisible && !isDismissed;
 
   return (
     <>
       {/* BOUTON FLOTTANT D'INSTALLATION SUR MOBILE & DESKTOP */}
-      <div className={`pwa-install-banner ${isVisible ? 'is-visible' : ''}`}>
-        <div className="pwa-install-content" onClick={handleInstallClick}>
-          <div className="pwa-install-icon-wrapper">
-            <RevizoLogo size={36} />
-          </div>
+      {showBanner && (
+        <div className={`pwa-install-banner ${isVisible ? 'is-visible' : ''}`}>
+          <div className="pwa-install-content" onClick={handleInstallClick}>
+            <div className="pwa-install-icon-wrapper">
+              <RevizoLogo size={36} />
+            </div>
 
-          <div className="pwa-install-text">
-            <span className="pwa-install-title">
-              {isInstalled ? 'REVIZO est installé' : "Installer l'application REVIZO"}
-            </span>
-            <span className="pwa-install-desc">
-              {isInstalled
-                ? 'Accès instantané depuis votre écran'
-                : 'Installez gratuitement sur votre téléphone'}
-            </span>
+            <div className="pwa-install-text">
+              <span className="pwa-install-title">
+                {isInstalled ? 'REVIZO est installé' : "Installer l'application REVIZO"}
+              </span>
+              <span className="pwa-install-desc">
+                {isInstalled
+                  ? 'Accès instantané depuis votre écran'
+                  : 'Installez gratuitement sur votre téléphone'}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className="pwa-install-action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleInstallClick();
+              }}
+            >
+              {isInstalled ? (
+                <>
+                  <Check size={16} strokeWidth={3} />
+                  <span>Installé</span>
+                </>
+              ) : (
+                <>
+                  <Download size={16} strokeWidth={2.5} />
+                  <span>Installer</span>
+                </>
+              )}
+            </button>
           </div>
 
           <button
             type="button"
-            className="pwa-install-action-btn"
+            className="pwa-install-close-btn"
             onClick={(e) => {
               e.stopPropagation();
-              handleInstallClick();
+              setIsDismissed(true);
             }}
+            aria-label="Fermer la suggestion"
           >
-            {isInstalled ? (
-              <>
-                <Check size={16} strokeWidth={3} />
-                <span>Installé</span>
-              </>
-            ) : (
-              <>
-                <Download size={16} strokeWidth={2.5} />
-                <span>Installer</span>
-              </>
-            )}
+            <X size={16} />
           </button>
         </div>
-
-        <button
-          type="button"
-          className="pwa-install-close-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsDismissed(true);
-          }}
-          aria-label="Fermer la suggestion"
-        >
-          <X size={16} />
-        </button>
-      </div>
+      )}
 
       {/* MODAL GUIDÉE D'INSTALLATION (POUR IPHONE / IPAD & AUTRES NAVIGATEURS) */}
       {showIosGuide && (

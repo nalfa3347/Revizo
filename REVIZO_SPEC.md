@@ -890,6 +890,24 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - Build de production `npm run build` : 100% succès (0 erreur TS).
     - Suite de tests complète `npm test` : 25/25 fichiers passés, 181/181 tests validés.
 
+- [x] **AUDIT DE CONFORMITÉ & RESPONSIVE iPHONE (TÉLÉCHARGEMENT PWA, ICÔNE RETINA & INTERFACE MOBILE)** (Terminée et Validée le 2026-09-09)
+  - **1. Téléchargement & Installation de l'application sur iPhone (PWA iOS)** :
+    - Sur Safari iOS, l'API programmatique `beforeinstallprompt` n'existe pas. L'installation se fait via la PWA native Apple : *Bouton Partager (carré avec flèche vers le haut en bas de Safari) -> Sur l'écran d'accueil -> Ajouter*.
+    - Déclencheur direct ajouté dans le menu burger mobile de la Landing Page (`LandingNavbar.tsx`) et dans la section *Compte & Préférences* du profil élève (`ProfileView.tsx`).
+    - Modale dédiée iOS guidée étape par étape avec illustrations claires des 3 actions Apple.
+    - Bannière PWA flottante optimisée pour ne jamais chevaucher la barre noire du Home Indicator sur iPhone avec Face ID : `bottom: calc(16px + env(safe-area-inset-bottom, 0px));`.
+  - **2. Icône de l'application sur l'écran d'accueil iPhone (`apple-touch-icon`)** :
+    - Balises déclarées dans `index.html` : `apple-touch-icon` (180x180 px), `apple-touch-icon-precomposed` et `apple-mobile-web-app-capable`.
+    - Fichier `public/apple-touch-icon.png` audité : exactement 180x180 px, type de couleur PNG 2 (Truecolor RGB opaque sans transparence risquant de produire un fond noir indésirable sur iOS). L'icône est le logo officiel REVIZO orange (#EA580C) détouré avec le glyphe blanc et jaune.
+  - **3. Responsive de l'Interface sur iPhone** :
+    - Zéro dépassement horizontal (`scrollWidth <= innerWidth`) validé par tests automatisés sur iPhone 14/15/16 (390x844 px) et iPhone SE (375x667 px).
+    - Règle anti-zoom intempestif iOS Safari : taille minimale forcée à 16px sur tous les champs de saisie (`input`, `select`, `textarea`) pour empêcher Safari d'effectuer un zoom forcé destructeur lors de la sélection d'un champ.
+    - Safe Area Insets iOS : `env(safe-area-inset-top)` et `env(safe-area-inset-bottom)` appliqués sur la barre de navigation haute (`.app-header`), la barre de navigation basse 4 onglets (`.mobile-bottom-nav`) et l'ensemble des modales (`.modal-overlay`, `.legal-modal-overlay`).
+  - **Validation & Non-Régression** :
+    - Nouveau fichier de tests unitaires et d'intégrité : `src/test/IphoneResponsiveAndPwa.test.ts` (5/5 tests validés).
+    - Suite de tests complète : 26 fichiers de tests passés, **186 tests validés sur 186 (100% de succès)**.
+    - Compilation TypeScript et build Vite : `npm run build` réussi en 12.48s (0 erreur TS).
+
 ---
 
 ## 🔒 RÈGLE IMPÉRATIVE DE SÉCURITÉ : GESTION DES SECRETS & CLÉS D'API

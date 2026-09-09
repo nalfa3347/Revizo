@@ -16,13 +16,17 @@ import {
   ArrowLeft,
   Calendar,
   Gift,
-  Share2
+  Share2,
+  Smartphone,
+  Share,
+  PlusSquare
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { UserGoal } from '../../services/UserService';
 import { SchoolLevel } from '../../types';
 import { Skeleton } from '../common/Skeleton';
 import { FriendlyNotice } from '../common/FriendlyNotice';
+import { RevizoLogo } from '../common/RevizoLogo';
 
 interface ProfileViewProps {
   onBack?: () => void;
@@ -60,12 +64,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   // Formulaire d'édition de profil
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editGradeLevel, setEditGradeLevel] = useState<SchoolLevel>('3e');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const standalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+      setIsStandalone(standalone);
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -615,7 +630,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <ChevronRight size={18} color="var(--text-muted)" />
           </button>
 
-          {/* Action 4 : Se déconnecter */}
+          {/* Action 4 : Installer sur mon téléphone (iOS / Android) */}
+          {!isStandalone && (
+            <button
+              className="profile-menu-item"
+              onClick={() => setShowInstallGuide(true)}
+              id="btn-install-app-profile"
+            >
+              <div className="profile-menu-item-left">
+                <div className="profile-menu-icon-box" style={{ background: '#FFF7ED', color: '#EA580C' }}>
+                  <Smartphone size={18} />
+                </div>
+                <div className="profile-menu-texts">
+                  <span className="profile-menu-label" style={{ color: '#EA580C', fontWeight: 700 }}>
+                    Installer l'application sur mon écran
+                  </span>
+                  <span className="profile-menu-caption">Ajouter l'icône officielle sur iPhone ou Android</span>
+                </div>
+              </div>
+              <ChevronRight size={18} color="#EA580C" />
+            </button>
+          )}
+
+          {/* Action 5 : Se déconnecter */}
           <button
             className="profile-menu-item danger"
             onClick={() => setIsLogoutModalOpen(true)}
@@ -841,6 +878,105 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 onClick={() => setIsSettingsModalOpen(false)}
               >
                 Compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODALE : INSTALLATION SUR ÉCRAN D'ACCUEIL (iPHONE / ANDROID)
+          ========================================================================= */}
+      {showInstallGuide && (
+        <div className="modal-overlay animate-fade-in" onClick={() => setShowInstallGuide(false)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: '440px' }}
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <RevizoLogo size={32} />
+                <h3 className="modal-title">Installer REVIZO</h3>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowInstallGuide(false)}
+                aria-label="Fermer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ textAlign: 'center', margin: '4px 0 16px 0' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '16px',
+                  background: '#FFF3E8',
+                  marginBottom: '10px'
+                }}
+              >
+                <Smartphone size={28} color="#EA580C" />
+              </div>
+              <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#111827' }}>
+                Accès direct sur iPhone
+              </h4>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: '#6B7280' }}>
+                Ajoute l'application sur ton écran d'accueil sans passer par l'App Store.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '10px 12px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#EA580C', color: '#FFF', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  1
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#374151', lineHeight: 1.45 }}>
+                  Dans <strong>Safari</strong> (sur iPhone), appuie sur le bouton <strong>Partager</strong>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#FFF', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '1px 5px', fontSize: '0.76rem', fontWeight: 600, margin: '0 4px' }}>
+                    <Share size={12} /> Partager
+                  </span>
+                  en bas au centre de l'écran.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '10px 12px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#EA580C', color: '#FFF', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  2
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#374151', lineHeight: 1.45 }}>
+                  Fais défiler la liste vers le bas et choisis <strong>« Sur l'écran d'accueil »</strong>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#FFF', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '1px 5px', fontSize: '0.76rem', fontWeight: 600, margin: '0 4px' }}>
+                    <PlusSquare size={12} /> Sur l'écran d'accueil
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '10px 12px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#EA580C', color: '#FFF', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  3
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#374151', lineHeight: 1.45 }}>
+                  Touche <strong>Ajouter</strong> en haut à droite. L'icône orange REVIZO est installée sur ton iPhone !
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions" style={{ justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => setShowInstallGuide(false)}
+              >
+                C'est compris !
               </button>
             </div>
           </div>

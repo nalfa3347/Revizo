@@ -752,7 +752,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                         onChange={e => setSignupReferralCode(e.target.value.toUpperCase())}
                         placeholder="ex : REV-ABC123 (laisse vide si aucun)"
                         className="auth-input"
-                        style={{ letterSpacing: '0.04em', textTransform: 'uppercase', fontSize: '0.88rem' }}
+                        style={{ letterSpacing: '0.04em', textTransform: 'uppercase' }}
                       />
                     </div>
                     <span className="auth-field-hint" style={{ color: '#B45309', marginTop: '4px', fontSize: '0.78rem' }}>
