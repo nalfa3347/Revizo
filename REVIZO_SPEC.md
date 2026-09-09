@@ -825,6 +825,7 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
       2. **Essentiel** : 1 000 FCFA/mois, 4 révisions/jour (et non "10/mois"), 10 diamants offerts.
       3. **Intensif (Pro)** : 3 000 FCFA/mois, 10 révisions/jour (et non "illimité"), 30 diamants offerts.
       4. **Premium** : 5 000 FCFA/mois, 18 révisions/jour (quota explicite), 60 diamants offerts.
+    - *Mise en page de la Landing Page* : 1 bandeau Essai Gratuit dédié (`landing-free-trial-banner`) + 1 grille de 3 cartes payantes (`landing-pricing-card` pour Essentiel, Intensif, Premium) au lieu de 4 cartes distinctes.
     - *Résultat* : Aucune désynchronisation possible entre la landing page et l'application in-app.
   - **Tâche 2 — Suppression Totale des Mentions Carte Bancaire & Mobile Money Exclusif** :
     - *Règle respectée* : Retrait de toute référence à la carte bancaire ou aux banques, sans justification superflue.
@@ -870,8 +871,9 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
       - Erreur quiz provoquée -> Énergie décrémentée de 3 à 2 ⚡.
       - Consultation de la notion faible -> Énergie reste strictement à 2 ⚡ (zéro fuite).
       - Achat de recharge (5 💎 = 1 ⚡) -> Énergie restaurée à 3 ⚡, solde diamant débité à 20 💎.
-    - 23 suites de tests Vitest exécutées : 165 tests passés sur 165 (100% de succès).
-    - Build de production `tsc -b && vite build` validé avec succès en 8.59s.
+    - Test d'isolation RLS multi-tenant `supabaseE2EPersistence.test.ts` : 8/8 tests passés (100% succès).
+    - Suite COMPLÈTE `npm test` : 25/25 fichiers de test passés, **181 tests passés sur 181 (100% de succès)**.
+    - Build de production `tsc -b && vite build` validé avec succès en 8.54s.
 
 ---
 

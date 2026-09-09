@@ -115,6 +115,11 @@ describe('REVIZO — Tests Unitaires & Intégrité de la Landing Page', () => {
     expect(html).toContain('FCFA / mois');
     expect(html).not.toContain('bancaire');
     expect(html).not.toContain('Carte');
+
+    // Vérifie la structure : 1 bandeau essai gratuit + exactement 3 cartes payantes
+    expect(html).toContain('landing-free-trial-banner');
+    const cardMatches = html.match(/landing-pricing-card/g);
+    expect(cardMatches).toHaveLength(3);
   });
 
   it('affiche les questions fréquentes dans la section FAQ', () => {

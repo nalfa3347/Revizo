@@ -1174,6 +1174,98 @@
   margin: 0;
 }
 
+/* Bandeau Essai Gratuit */
+.landing-free-trial-banner {
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 100%);
+  border: 2px solid #FDBA74;
+  border-radius: 24px;
+  padding: 28px 32px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  box-shadow: 0 4px 20px rgba(234, 88, 12, 0.06);
+}
+
+.landing-free-trial-content {
+  flex: 1;
+}
+
+.landing-free-trial-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.landing-free-trial-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFEDD5;
+  color: #C2410C;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.landing-free-trial-price {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #EA580C;
+}
+
+.landing-free-trial-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--landing-text-main);
+  margin: 0 0 6px 0;
+}
+
+.landing-free-trial-desc {
+  font-size: 0.9rem;
+  color: var(--landing-text-muted);
+  margin: 0 0 16px 0;
+  max-width: 680px;
+}
+
+.landing-free-trial-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.landing-free-trial-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--landing-text-muted);
+}
+
+.landing-free-trial-action {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .landing-free-trial-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 24px 20px;
+  }
+  .landing-free-trial-action button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Grille des tarifs en FCFA */
 .landing-pricing-grid {
   display: grid;
