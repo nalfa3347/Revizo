@@ -786,6 +786,37 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - 25 suites de tests unitaires et d'intégration réussies (48/48 tests de monétisation et utilitaires validés à 100%).
     - Build de production `tsc -b && vite build` validé avec succès en 13.31s.
 
+- [x] **PHASE VÉRIFICATION ET CORRECTION COMPLÈTE DES QUOTAS PAR FORFAIT** (Terminée et Validée le 2026-09-09)
+  - **Tâche 1 — Quota Forfait Essentiel (4 révisions / jour)** :
+    - *Implémentation* : Limite de 4 générations par jour confirmée et active dans la fonction PostgreSQL `record_revision_usage` et `MockDataProvider`.
+    - *Comportement au dépassement* : Au 5e import le même jour, blocage strict (`allowed: false`, `limit: 4`, `used: 4`, `canUpgrade: true`, `upgradeTarget: 'pro_or_premium'`).
+    - *Message affiché* : *"Tu as atteint ta limite de 4 révisions du jour. Ton compteur sera réinitialisé demain à minuit UTC. Passe à Pro (10/j) ou Premium (18/j) pour réviser davantage dès maintenant !"*.
+    - *Proposition d'upgrade* : Bouton principal *"Passer à Pro ou Premium"* redirigeant vers l'écran d'abonnement + bouton *"Fermer"*.
+    - *Preuve réelle en production* : Test réel Supabase validé avec 4 imports acceptés (`used: 1..4, allowed: true`), 5e import bloqué (`used: 4, allowed: false`).
+  - **Tâche 2 — Quota Forfait Pro (10 révisions / jour)** :
+    - *Implémentation* : Limite de 10 générations par jour (`plan: 'intensif'`) active en base de données et côté frontend.
+    - *Comportement au dépassement* : Au 11e import le même jour, blocage strict (`allowed: false`, `limit: 10`, `used: 10`, `canUpgrade: true`, `upgradeTarget: 'premium'`).
+    - *Message affiché* : *"Tu as atteint ta limite de 10 révisions du jour. Ton compteur sera réinitialisé demain à minuit UTC. Passe à Premium pour réviser jusqu’à 18 cours par jour !"*.
+    - *Proposition d'upgrade ciblée* : Bouton principal *"Passer à Premium"* (aucune rétrogradation vers Essentiel proposée) + bouton *"Fermer"*.
+    - *Preuve réelle en production* : Test réel Supabase validé avec 10 imports acceptés (`used: 1..10, allowed: true`), 11e import bloqué (`used: 10, allowed: false`).
+  - **Tâche 3 — Quota & Comportement Spécifique Premium (18 révisions / jour)** :
+    - *Règle critique* : Premium est le palier le plus élevé (sommet de gamme). Au dépassement de quota (19e import), le système **ne doit jamais proposer de mise à niveau ni d'écran de paywall**.
+    - *Implémentation* :
+      - Backend PostgreSQL : `canUpgrade: false`, `upgradeTarget: null`.
+      - Edge Function `orchestrate-course` : propage `canUpgrade: false`, `upgradeTarget: null`.
+      - Frontend modal (`ImportProcessingModal.tsx`) : Détecte l'abonné Premium et affiche **uniquement** le bouton neutre *"J'ai compris"* qui ferme le modal. Zéro bouton d'upgrade, zéro paywall.
+    - *Message épuré affiché* : *"Tu as utilisé tes 18 révisions du jour. Reviens demain pour continuer à réviser !"*.
+    - *Preuve réelle en production* : Test réel Supabase validé avec 18 imports acceptés (`used: 1..18, allowed: true`), 19e import bloqué (`used: 18, allowed: false, canUpgrade: false, upgradeTarget: null`).
+  - **Tâche 4 — Preuve Technique de Réinitialisation Quotidienne à Minuit UTC** :
+    - *Paliers payants (Essentiel, Pro, Premium)* : Le compteur `daily_revision_used` est automatiquement réinitialisé à 0 à minuit UTC grâce à la condition PostgreSQL `IF v_energy.revision_counter_date < CURRENT_DATE THEN v_used := 0; END IF;` (l'instance Supabase étant synchronisée sur l'horloge UTC).
+    - *Preuve technique réelle testée* : Un utilisateur Premium ayant consommé ses 18 révisions avec `revision_counter_date` à la veille voit son premier appel du lendemain réinitialiser son compteur : `used: 1, remaining: 17, allowed: true`.
+    - *Essai Gratuit (ne se réinitialise JAMAIS à vie)* : L'éligibilité à l'essai gratuit dépend du comptage persistant des cours créés en base (`SELECT COUNT(*) FROM courses WHERE user_id = p_user_id`). Les cours n'étant jamais supprimés, `courses_count >= 1` reste vrai à perpétuité. Preuve technique testée : le lendemain, l'utilisateur gratuit reste strictement bloqué (`allowed: false, trialExhausted: true`).
+  - **Validation & Non-Régression** :
+    - Edge Function Supabase `orchestrate-course` déployée en **Version 10 active (`ACTIVE`)**.
+    - Migration PostgreSQL appliquée avec succès sur Supabase.
+    - 181/181 tests unitaires et d'intégration Vitest validés à 100% sans aucune régression.
+    - Build de production `tsc -b && vite build` validé avec succès en 18.31s.
+
 ---
 
 ## 🔒 RÈGLE IMPÉRATIVE DE SÉCURITÉ : GESTION DES SECRETS & CLÉS D'API

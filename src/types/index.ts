@@ -497,6 +497,9 @@ export interface RevisionUsageResult {
   limit: number;
   used: number;
   remaining: number;
+  plan?: string;
+  canUpgrade?: boolean;
+  upgradeTarget?: string | null;
   error?: string;
   message?: string;
   trialExhausted?: boolean;

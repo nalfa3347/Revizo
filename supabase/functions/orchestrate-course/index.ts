@@ -423,8 +423,11 @@ Deno.serve(async (req: Request) => {
         error: usageCheck.message || "Tu as atteint ta limite de révisions du jour. Ton compteur sera réinitialisé demain.",
         quotaReached: true,
         trialExhausted: isTrialExhausted,
+        plan: usageCheck.plan || null,
         limit: usageCheck.limit,
-        used: usageCheck.used
+        used: usageCheck.used,
+        canUpgrade: usageCheck.canUpgrade ?? (usageCheck.plan !== 'premium'),
+        upgradeTarget: usageCheck.upgradeTarget ?? (usageCheck.plan === 'essentiel' ? 'pro_or_premium' : usageCheck.plan === 'intensif' ? 'premium' : null)
       }), {
         status: isTrialExhausted ? 403 : 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" }

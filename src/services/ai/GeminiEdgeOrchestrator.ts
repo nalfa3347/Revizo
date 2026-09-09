@@ -111,6 +111,9 @@ export class GeminiEdgeOrchestrator {
         let errMessage = "Nous n'avons pas réussi à analyser ton cours. Réessaie dans quelques instants.";
         let isTrialExhausted = false;
         let isTooManyPages = false;
+        let userPlan: string | null = null;
+        let canUpgrade: boolean | null = null;
+        let upgradeTarget: string | null = null;
         try {
           // Extraire le message retourné par l'Edge Function
           if (error.context) {
@@ -119,6 +122,9 @@ export class GeminiEdgeOrchestrator {
             if (ctxJson.error) errMessage = ctxJson.error;
             if (ctxJson.trialExhausted) isTrialExhausted = true;
             if (ctxJson.tooManyPages) isTooManyPages = true;
+            if (ctxJson.plan) userPlan = ctxJson.plan;
+            if (ctxJson.canUpgrade !== undefined) canUpgrade = ctxJson.canUpgrade;
+            if (ctxJson.upgradeTarget) upgradeTarget = ctxJson.upgradeTarget;
           }
         } catch {}
 
@@ -128,6 +134,9 @@ export class GeminiEdgeOrchestrator {
         const customErr: any = new Error(errMessage);
         customErr.trialExhausted = isTrialExhausted;
         customErr.tooManyPages = isTooManyPages;
+        customErr.plan = userPlan;
+        customErr.canUpgrade = canUpgrade;
+        customErr.upgradeTarget = upgradeTarget;
         throw customErr;
       }
 
@@ -256,7 +265,10 @@ export class GeminiEdgeOrchestrator {
       onProgress?.({
         stage: 'error',
         message: err.message || "Nous n'avons pas réussi à analyser ton cours. Réessaie dans quelques instants.",
-        percent: 0
+        percent: 0,
+        plan: err.plan,
+        canUpgrade: err.canUpgrade,
+        upgradeTarget: err.upgradeTarget
       });
       throw err;
     }

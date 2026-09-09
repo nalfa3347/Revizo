@@ -934,6 +934,7 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
         progress={pipelineProgress}
         result={pipelineResult}
         fileName={importingFileName}
+        userPlan={economy?.subscription?.plan ?? 'free'}
         onClose={() => {
           setPipelineProgress(null);
           setPipelineResult(null);

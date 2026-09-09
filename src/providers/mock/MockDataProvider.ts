@@ -946,27 +946,58 @@ export class MockDataProvider implements IDataProvider {
     }
 
     const energy = this.userEnergy.get(userId)!;
+    const plan = sub?.plan || 'free';
+
+    // Règle TÂCHE 4 : Réinitialisation quotidienne à minuit UTC
+    const todayUtc = new Date().toISOString().split('T')[0];
+    const counterDate = (energy as any).revisionCounterDate || todayUtc;
+    if (counterDate < todayUtc) {
+      energy.dailyRevisionUsed = 0;
+      energy.dailyRevisionRemaining = energy.dailyRevisionLimit;
+      (energy as any).revisionCounterDate = todayUtc;
+    }
+
     if (energy.dailyRevisionUsed >= energy.dailyRevisionLimit) {
+      let quotaMessage = `Tu as atteint ta limite de ${energy.dailyRevisionLimit} révisions du jour. Ton compteur sera réinitialisé demain.`;
+      let upgradeTarget: string | null = null;
+
+      if (plan === 'premium') {
+        quotaMessage = 'Tu as utilisé tes 18 révisions du jour. Reviens demain pour continuer à réviser !';
+        upgradeTarget = null;
+      } else if (plan === 'intensif') {
+        quotaMessage = 'Tu as atteint ta limite de 10 révisions du jour. Ton compteur sera réinitialisé demain à minuit UTC. Passe à Premium pour réviser jusqu’à 18 cours par jour !';
+        upgradeTarget = 'premium';
+      } else if (plan === 'essentiel') {
+        quotaMessage = 'Tu as atteint ta limite de 4 révisions du jour. Ton compteur sera réinitialisé demain à minuit UTC. Passe à Pro (10/j) ou Premium (18/j) pour réviser davantage dès maintenant !';
+        upgradeTarget = 'pro_or_premium';
+      }
+
       return {
         allowed: false,
         limit: energy.dailyRevisionLimit,
         used: energy.dailyRevisionUsed,
         remaining: 0,
         trialExhausted: false,
+        plan,
+        canUpgrade: upgradeTarget !== null,
+        upgradeTarget,
         error: 'daily_limit_reached',
-        message: `Tu as atteint ta limite de ${energy.dailyRevisionLimit} révisions du jour. Ton compteur sera réinitialisé demain.`
+        message: quotaMessage
       };
     }
 
     energy.dailyRevisionUsed += 1;
     energy.dailyRevisionRemaining = energy.dailyRevisionLimit - energy.dailyRevisionUsed;
+    (energy as any).revisionCounterDate = todayUtc;
 
     return {
       allowed: true,
       trialExhausted: false,
+      plan,
       limit: energy.dailyRevisionLimit,
       used: energy.dailyRevisionUsed,
-      remaining: energy.dailyRevisionRemaining
+      remaining: energy.dailyRevisionRemaining,
+      canUpgrade: plan !== 'premium'
     };
   }
 

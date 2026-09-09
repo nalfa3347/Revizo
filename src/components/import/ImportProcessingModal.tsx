@@ -14,6 +14,7 @@ interface ImportProcessingModalProps {
   progress: PipelineProgress | null;
   result: PipelineResult | null;
   fileName: string | null;
+  userPlan?: string | null;
   onClose: () => void;
   onViewRevision: (course: Course, revision: Revision) => void;
   onStartQuiz: (course: Course, quiz: Quiz) => void;
@@ -24,6 +25,7 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
   progress,
   result,
   fileName,
+  userPlan,
   onClose,
   onViewRevision,
   onStartQuiz,
@@ -335,15 +337,42 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
           const msg = progress?.message || '';
           const isTrialExhausted = msg.includes('essai gratuit') || msg.includes('Choisis un forfait');
           const isTooManyPages = msg.includes('limite de 20 pages') || msg.includes('dépasse 20 pages') || msg.includes('Découpe-le');
-          const isDailyLimit = msg.includes('limite de révisions') || msg.includes('quota');
+
+          // Identification du palier d'abonnement
+          const effectivePlan = progress?.plan || userPlan || (isTrialExhausted ? 'free' : null);
+          const isPremium = effectivePlan === 'premium' || msg.includes('18 révisions');
+          const isPro = effectivePlan === 'intensif' || effectivePlan === 'pro' || msg.includes('10 révisions');
+          const isEssentiel = effectivePlan === 'essentiel' || msg.includes('4 révisions');
+          const isDailyLimit = isPremium || isPro || isEssentiel || msg.includes('limite de révisions') || msg.includes('quota') || msg.includes('révisions du jour');
+
+          // Règle formelle TÂCHE 3 : Premium ne doit JAMAIS se voir proposer un upgrade (palier maximum)
+          const canUpgrade = progress?.canUpgrade !== undefined
+            ? progress.canUpgrade
+            : (!isPremium && !isTooManyPages && (isDailyLimit || isTrialExhausted));
 
           let errorTitle = 'Lecture du document interrompue';
           if (isTrialExhausted) {
             errorTitle = 'Essai gratuit terminé';
           } else if (isTooManyPages) {
             errorTitle = 'Document trop long (> 20 pages)';
+          } else if (isPremium && isDailyLimit) {
+            errorTitle = 'Quota du jour atteint (18/18)';
+          } else if (isPro && isDailyLimit) {
+            errorTitle = 'Quota du jour atteint (10/10)';
+          } else if (isEssentiel && isDailyLimit) {
+            errorTitle = 'Quota du jour atteint (4/4)';
           } else if (isDailyLimit) {
             errorTitle = 'Limite quotidienne atteinte';
+          }
+
+          // Libellé adapté pour le bouton d'upgrade selon le forfait de l'élève
+          let upgradeButtonText = 'Voir les forfaits';
+          if (isTrialExhausted) {
+            upgradeButtonText = 'Choisir un forfait';
+          } else if (isPro || progress?.upgradeTarget === 'premium') {
+            upgradeButtonText = 'Passer à Premium';
+          } else if (isEssentiel || progress?.upgradeTarget === 'pro_or_premium') {
+            upgradeButtonText = 'Passer à Pro ou Premium';
           }
 
           return (
@@ -353,14 +382,14 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
                   width: '56px',
                   height: '56px',
                   borderRadius: '50%',
-                  backgroundColor: isTrialExhausted ? '#FFF7ED' : '#FEF2F2',
+                  backgroundColor: isTrialExhausted ? '#FFF7ED' : isPremium ? '#F1F5F9' : '#FEF2F2',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: '16px'
                 }}
               >
-                <AlertCircle size={30} color={isTrialExhausted ? '#EA580C' : '#EF4444'} />
+                <AlertCircle size={30} color={isTrialExhausted ? '#EA580C' : isPremium ? '#475569' : '#EF4444'} />
               </div>
 
               <h3
@@ -380,7 +409,25 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                {(isTrialExhausted || isDailyLimit) && onNavigateToSubscription ? (
+                {/* 1. Cas Premium : quota épuisé -> AUCUN bouton de paywall ni mise à niveau, juste "J'ai compris" */}
+                {isPremium && isDailyLimit ? (
+                  <button
+                    style={{
+                      backgroundColor: '#1E293B',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '12px 24px',
+                      fontSize: '0.95rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    onClick={onClose}
+                  >
+                    J'ai compris
+                  </button>
+                ) : (isTrialExhausted || (isDailyLimit && canUpgrade)) && onNavigateToSubscription ? (
+                  /* 2. Cas Gratuit, Essentiel, Pro : proposition de mise à niveau adaptée */
                   <>
                     <button
                       style={{
@@ -399,7 +446,7 @@ export const ImportProcessingModal: React.FC<ImportProcessingModalProps> = ({
                         onNavigateToSubscription();
                       }}
                     >
-                      {isTrialExhausted ? 'Choisir un forfait' : 'Voir les forfaits'}
+                      {upgradeButtonText}
                     </button>
                     <button
                       style={{

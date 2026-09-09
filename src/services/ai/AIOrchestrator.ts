@@ -24,6 +24,9 @@ export interface PipelineProgress {
   stage: PipelineStage;
   message: string;
   percent: number;
+  plan?: string;
+  canUpgrade?: boolean;
+  upgradeTarget?: string | null;
 }
 
 export interface PipelineResult {
@@ -78,7 +81,10 @@ export class AIOrchestrator {
         onProgress?.({
           stage: 'error',
           message: err.message || "Nous n'avons pas réussi à analyser ton cours. Réessaie dans quelques instants.",
-          percent: 0
+          percent: 0,
+          plan: err.plan,
+          canUpgrade: err.canUpgrade,
+          upgradeTarget: err.upgradeTarget
         });
         throw err;
       }
