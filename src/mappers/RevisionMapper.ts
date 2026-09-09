@@ -16,10 +16,19 @@ export class RevisionMapper {
             id: s.id || `sec-${idx + 1}`,
             order: s.order ?? s.orderIndex ?? idx + 1,
             title: s.title,
+            subtitle: s.subtitle,
+            presentationFormat: s.presentationFormat,
+            simpleExplanation: s.simpleExplanation,
+            technicalFormulation: s.technicalFormulation,
+            analogyOrExample: s.analogyOrExample,
+            mnemonicTip: s.mnemonicTip,
+            commonMistake: s.commonMistake,
+            conceptId: s.conceptId,
             content: s.content,
             keyTakeaways: s.keyTakeaways || s.key_takeaways || [],
             formulas: s.formulas,
-            examples: s.examples
+            examples: s.examples,
+            sourceReferences: s.sourceReferences
           }))
         : [],
       totalSections: row.total_sections || (row.sections ? row.sections.length : 0),
@@ -45,10 +54,19 @@ export class RevisionMapper {
         id: s.id,
         order: s.order ?? idx + 1,
         title: s.title,
+        subtitle: s.subtitle,
+        presentationFormat: s.presentationFormat,
+        simpleExplanation: s.simpleExplanation,
+        technicalFormulation: s.technicalFormulation,
+        analogyOrExample: s.analogyOrExample,
+        mnemonicTip: s.mnemonicTip,
+        commonMistake: s.commonMistake,
+        conceptId: s.conceptId,
         content: s.content,
         keyTakeaways: s.keyTakeaways || [],
         formulas: s.formulas,
-        examples: s.examples
+        examples: s.examples,
+        sourceReferences: s.sourceReferences
       }));
     }
     if (revision.totalSections !== undefined) row.total_sections = revision.totalSections;

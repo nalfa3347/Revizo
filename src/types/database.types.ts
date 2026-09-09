@@ -5,6 +5,8 @@
  * La passerelle se fait exclusivement via les Mappers.
  */
 
+import { SectionPresentationFormat, QuestionCategory, SourceReference } from './index';
+
 export type SupabaseUserRow = {
   id: string;
   email: string | null;
@@ -85,6 +87,14 @@ export type SupabaseRevisionRow = {
     id: string;
     order: number;
     title: string;
+    subtitle?: string;
+    presentationFormat?: SectionPresentationFormat;
+    simpleExplanation?: string;
+    technicalFormulation?: string;
+    analogyOrExample?: string;
+    mnemonicTip?: string;
+    commonMistake?: string;
+    conceptId?: string;
     content: string;
     keyTakeaways: string[];
     formulas?: string[];
@@ -110,11 +120,13 @@ export type SupabaseQuizRow = {
   questions: Array<{
     id: string;
     conceptId: string;
+    questionCategory?: QuestionCategory;
     question: string;
     choices: string[];
     correctChoiceIndex: number;
     explanation: string;
     difficulty: number;
+    sourceReferences?: SourceReference[];
   }>;
   created_at: string;
 };

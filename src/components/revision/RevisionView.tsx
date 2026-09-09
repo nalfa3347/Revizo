@@ -272,12 +272,21 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
       setImportedCourses(prev => [result.course, ...prev]);
     } catch (err: any) {
       console.error('Erreur lors du traitement du document :', err);
-      const isQuota = err?.status === 429 || err?.quotaReached || err?.message?.includes('limite de révisions');
+      const isQuota = err?.status === 429 || err?.quotaReached || err?.message?.includes('quota') || err?.message?.includes('limite de révisions');
+      const isOverloaded = err?.message?.includes('très demandé');
+      
+      let displayMessage = 'Impossible de lire le document. Vérifie son format et réessaie.';
+      if (err?.message && !err.message.includes('{"') && !err.message.includes('fetch') && !err.message.includes('Error:')) {
+        displayMessage = err.message;
+      } else if (isOverloaded) {
+        displayMessage = 'Le service est très demandé, réessaie dans quelques instants.';
+      } else if (isQuota) {
+        displayMessage = 'Tu as atteint ta limite de révisions du jour. Ton compteur sera réinitialisé demain.';
+      }
+
       setPipelineProgress({
         stage: 'error',
-        message: isQuota
-          ? 'Tu as atteint ta limite de révisions du jour. Ton compteur sera réinitialisé demain.'
-          : 'Impossible de lire le document. Vérifie son format et réessaie.',
+        message: displayMessage,
         percent: 0
       });
     }
@@ -432,36 +441,115 @@ export const RevisionView: React.FC<RevisionViewProps> = ({
 
           {/* 8. SECTIONS ÉDITORIALES DE RÉVISION */}
           <div className="fiche-sections-flow">
-            {activeRevision.sections.map((section) => (
-              <section key={section.id} className="fiche-editorial-section">
-                {/* Titre de la section */}
-                <h3 className="fiche-section-title">
-                  {section.title}
-                </h3>
+            {activeRevision.sections.map((section) => {
+              const formatLabel = section.presentationFormat === 'question_reponse'
+                ? { label: '❓ Question Clé', className: 'format-question' }
+                : section.presentationFormat === 'mise_en_situation'
+                ? { label: '🎬 En Situation', className: 'format-scenario' }
+                : section.presentationFormat === 'comparaison_avant_apres'
+                ? { label: '⚖️ Nuance & Comparaison', className: 'format-comparison' }
+                : section.presentationFormat === 'definition_directe'
+                ? { label: '💡 Définition Essentielle', className: '' }
+                : null;
 
-                {/* Texte explicatif fluide */}
-                <p className="fiche-section-content">
-                  {section.content}
-                </p>
+              const hasRichBlocks = Boolean(
+                section.simpleExplanation ||
+                section.technicalFormulation ||
+                section.analogyOrExample ||
+                section.mnemonicTip ||
+                section.commonMistake
+              );
 
-                {/* Bloc « À retenir » bienveillant et structuré */}
-                {section.keyTakeaways && section.keyTakeaways.length > 0 && (
-                  <div className="fiche-takeaways-box">
-                    <div className="fiche-takeaways-header">
-                      <span className="fiche-takeaways-tag">À retenir</span>
-                    </div>
-                    <ul className="fiche-takeaways-list">
-                      {section.keyTakeaways.map((item, idx) => (
-                        <li key={idx} className="fiche-takeaways-item">
-                          <span className="fiche-takeaways-bullet">•</span>
-                          <span className="fiche-takeaways-text">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+              return (
+                <section key={section.id} className="fiche-editorial-section">
+                  {/* Titre de la section et badge de format */}
+                  <div className="fiche-section-header-row">
+                    {formatLabel && (
+                      <span className={`fiche-format-badge ${formatLabel.className}`}>
+                        {formatLabel.label}
+                      </span>
+                    )}
+                    <h3 className="fiche-section-title">
+                      {section.title}
+                    </h3>
                   </div>
-                )}
-              </section>
-            ))}
+
+                  {/* Sous-titre convivial */}
+                  {section.subtitle && (
+                    <div className="fiche-section-subtitle">
+                      {section.subtitle}
+                    </div>
+                  )}
+
+                  {/* Blocs riches didactiques */}
+                  {hasRichBlocks ? (
+                    <>
+                      {/* 1. En clair : explication simple */}
+                      {section.simpleExplanation && (
+                        <div className="fiche-simple-box">
+                          <div className="fiche-box-tag fiche-simple-tag">💡 En clair</div>
+                          <p className="fiche-box-text">{section.simpleExplanation}</p>
+                        </div>
+                      )}
+
+                      {/* 2. Règle & Formulation technique */}
+                      {section.technicalFormulation && (
+                        <div className="fiche-technical-box">
+                          <div className="fiche-box-tag fiche-technical-tag">📐 Règle & Formulation</div>
+                          <p className="fiche-box-text">{section.technicalFormulation}</p>
+                        </div>
+                      )}
+
+                      {/* 3. Analogie concrète */}
+                      {section.analogyOrExample && (
+                        <div className="fiche-analogy-box">
+                          <div className="fiche-box-tag fiche-analogy-tag">🌍 Analogie concrète</div>
+                          <p className="fiche-box-text">{section.analogyOrExample}</p>
+                        </div>
+                      )}
+
+                      {/* 4. Astuce Mémo */}
+                      {section.mnemonicTip && (
+                        <div className="fiche-mnemonic-box">
+                          <div className="fiche-box-tag fiche-mnemonic-tag">🧠 Astuce Mémo</div>
+                          <p className="fiche-box-text">{section.mnemonicTip}</p>
+                        </div>
+                      )}
+
+                      {/* 5. Piège fréquent */}
+                      {section.commonMistake && (
+                        <div className="fiche-trap-box">
+                          <div className="fiche-box-tag fiche-trap-tag">⚠️ Piège fréquent à éviter</div>
+                          <p className="fiche-box-text">{section.commonMistake}</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* Texte explicatif fluide par défaut */
+                    <p className="fiche-section-content" style={{ whiteSpace: 'pre-line' }}>
+                      {section.content}
+                    </p>
+                  )}
+
+                  {/* Bloc « À retenir » bienveillant et structuré */}
+                  {section.keyTakeaways && section.keyTakeaways.length > 0 && (
+                    <div className="fiche-takeaways-box">
+                      <div className="fiche-takeaways-header">
+                        <span className="fiche-takeaways-tag">À retenir</span>
+                      </div>
+                      <ul className="fiche-takeaways-list">
+                        {section.keyTakeaways.map((item, idx) => (
+                          <li key={idx} className="fiche-takeaways-item">
+                            <span className="fiche-takeaways-bullet">•</span>
+                            <span className="fiche-takeaways-text">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </section>
+              );
+            })}
 
             {/* Carte de validation de révision & gain de diamants (+2 💎) */}
             <div

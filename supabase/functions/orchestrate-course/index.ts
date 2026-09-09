@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-// Schéma JSON strict pour Structured Output Gemini
+// Schéma JSON strict pour Structured Output Gemini (Pipeline Pédagogique Enrichi V2)
 const GEMINI_PEDAGOGICAL_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -44,6 +44,7 @@ const GEMINI_PEDAGOGICAL_SCHEMA = {
           difficulty: { type: "INTEGER" },
           keyPoints: { type: "ARRAY", items: { type: "STRING" } },
           rulesFormulas: { type: "STRING" },
+          semanticAliases: { type: "ARRAY", items: { type: "STRING" } },
           sourceReferences: {
             type: "ARRAY",
             items: {
@@ -88,6 +89,39 @@ const GEMINI_PEDAGOGICAL_SCHEMA = {
         essentialSummary: { type: "STRING" },
         fundamentalNotions: { type: "ARRAY", items: { type: "STRING" } },
         keyPoints: { type: "ARRAY", items: { type: "STRING" } },
+        sections: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              id: { type: "STRING" },
+              conceptId: { type: "STRING" },
+              title: { type: "STRING" },
+              subtitle: { type: "STRING" },
+              presentationFormat: {
+                type: "STRING",
+                enum: ["definition_directe", "question_reponse", "mise_en_situation", "comparaison_avant_apres"]
+              },
+              simpleExplanation: { type: "STRING" },
+              technicalFormulation: { type: "STRING" },
+              analogyOrExample: { type: "STRING" },
+              mnemonicTip: { type: "STRING" },
+              commonMistake: { type: "STRING" },
+              keyTakeaways: { type: "ARRAY", items: { type: "STRING" } },
+              sourceReferences: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    page: { type: "INTEGER" },
+                    section: { type: "STRING" }
+                  }
+                }
+              }
+            },
+            required: ["id", "conceptId", "title", "subtitle", "presentationFormat", "simpleExplanation", "keyTakeaways", "sourceReferences"]
+          }
+        },
         methods: {
           type: "ARRAY",
           items: {
@@ -124,7 +158,7 @@ const GEMINI_PEDAGOGICAL_SCHEMA = {
         commonPitfalls: { type: "ARRAY", items: { type: "STRING" } },
         memorizationChecklist: { type: "ARRAY", items: { type: "STRING" } }
       },
-      required: ["title", "essentialSummary", "fundamentalNotions", "keyPoints", "methods", "formulas", "examples", "commonPitfalls", "memorizationChecklist"]
+      required: ["title", "essentialSummary", "fundamentalNotions", "keyPoints", "sections", "methods", "formulas", "examples", "commonPitfalls", "memorizationChecklist"]
     },
     comprehensionQuestions: {
       type: "ARRAY",
@@ -133,6 +167,10 @@ const GEMINI_PEDAGOGICAL_SCHEMA = {
         properties: {
           id: { type: "STRING" },
           conceptId: { type: "STRING" },
+          questionCategory: {
+            type: "STRING",
+            enum: ["rappel_direct", "application_concrete", "piege_confusion", "mise_en_situation"]
+          },
           question: { type: "STRING" },
           expectedAnswer: { type: "STRING" },
           explanation: { type: "STRING" },
@@ -172,6 +210,10 @@ const GEMINI_PEDAGOGICAL_SCHEMA = {
                   properties: {
                     id: { type: "STRING" },
                     conceptId: { type: "STRING" },
+                    questionCategory: {
+                      type: "STRING",
+                      enum: ["rappel_direct", "application_concrete", "piege_confusion", "mise_en_situation"]
+                    },
                     type: { type: "STRING", enum: ["qcm", "true_false"] },
                     question: { type: "STRING" },
                     options: { type: "ARRAY", items: { type: "STRING" } },
@@ -206,6 +248,10 @@ const GEMINI_PEDAGOGICAL_SCHEMA = {
         properties: {
           id: { type: "STRING" },
           conceptId: { type: "STRING" },
+          exerciseType: {
+            type: "STRING",
+            enum: ["application_directe", "cas_pratique", "analyse_piege", "resolution_probleme"]
+          },
           statement: { type: "STRING" },
           instructions: { type: "STRING" },
           expectedMethod: { type: "STRING" },
@@ -229,23 +275,49 @@ const GEMINI_PEDAGOGICAL_SCHEMA = {
   required: ["identity", "understanding", "concepts", "mustMemorize", "revision", "comprehensionQuestions", "quizPlan", "exercises"]
 };
 
-// Retry helper avec exponential backoff
+// Retry helper avec backoff adapté au RPM réel de 5 (1 requête / 12s) et support du header Retry-After
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
-  let delay = 1000;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const res = await fetch(url, options);
-      if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+
+      // Gestion spécifique du code HTTP 429 (Rate limit RPM ou quota dépassé)
+      if (res.status === 429) {
         if (attempt === maxRetries) return res;
-        await new Promise(r => setTimeout(r, delay));
-        delay *= 2;
+
+        // Vérifier si Google fournit un header Retry-After
+        const retryAfterHeader = res.headers.get("retry-after");
+        let delayMs = 12000 * attempt; // Avec 5 RPM, il faut au moins 12s pour libérer 1 slot de la fenêtre glissante
+        if (retryAfterHeader) {
+          const parsed = parseInt(retryAfterHeader, 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            delayMs = Math.max(parsed * 1000, 12000);
+          }
+        }
+        // Jitter aléatoire (+ 500ms à 1500ms) pour éviter les collisions simultanées
+        const jitter = Math.floor(Math.random() * 1000) + 500;
+        const totalDelay = delayMs + jitter;
+
+        console.warn(`[Retry 429 ${attempt}/${maxRetries}] Débit saturé (limite 5 RPM). Pause de ${(totalDelay / 1000).toFixed(1)}s avant réessai...`);
+        await new Promise(r => setTimeout(r, totalDelay));
         continue;
       }
+
+      // Gestion des erreurs serveur transitoires 5xx (500, 502, 503, 504)
+      if (res.status >= 500 && res.status < 600) {
+        if (attempt === maxRetries) return res;
+        const delayMs = 2000 * Math.pow(2, attempt - 1); // 2s, 4s
+        console.warn(`[Retry 5xx ${attempt}/${maxRetries}] Erreur serveur ${res.status}. Pause de ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+        continue;
+      }
+
       return res;
-    } catch (err) {
+    } catch (err: any) {
       if (attempt === maxRetries) throw err;
-      await new Promise(r => setTimeout(r, delay));
-      delay *= 2;
+      const delayMs = 2000 * Math.pow(2, attempt - 1);
+      console.warn(`[Retry Réseau ${attempt}/${maxRetries}] Erreur réseau : ${err?.message}. Pause de ${delayMs}ms...`);
+      await new Promise(r => setTimeout(r, delayMs));
     }
   }
   throw new Error("Maximum retries reached");
@@ -324,7 +396,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // CONTRÔLE SERVEUR STRICT DU QUOTA QUOTIDIEN DE RÉVISIONS
+    // CONTRÔLE SERVEUR STRICT DU QUOTA QUOTIDIEN DE RÉVISIONS DE L'ÉLÈVE
     const { data: usageCheck, error: usageErr } = await userClient.rpc("record_revision_usage", {
       p_user_id: userId
     });
@@ -337,6 +409,25 @@ Deno.serve(async (req: Request) => {
         quotaReached: true,
         limit: usageCheck.limit,
         used: usageCheck.used
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // GARDE-FOU CÔTÉ APPLICATION : Limite globale Free Tier Gemini (bloque à 90% de 20 requêtes/jour = 18)
+    const { data: globalUsage, error: globalErr } = await userClient.rpc("check_global_ai_daily_limit", {
+      p_safe_limit: 18
+    });
+
+    if (globalErr) {
+      console.warn("Avertissement vérification quota global AI:", globalErr);
+    } else if (globalUsage && !globalUsage.allowed) {
+      return new Response(JSON.stringify({
+        error: "Le quota d'analyses quotidien pour la phase de test a été atteint (18/20 cours). Les analyses reprendront demain dès minuit.",
+        globalQuotaReached: true,
+        limit: globalUsage.limit,
+        used: globalUsage.used
       }), {
         status: 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -363,21 +454,58 @@ Deno.serve(async (req: Request) => {
 
 ${inputTitle ? `Titre suggéré : "${inputTitle}". ` : ""}${inputSubject ? `Matière suggérée : "${inputSubject}". ` : ""}
 
-MISSION PÉDAGOGIQUE REVIZO :
-1. COMPRENDRE le cours en profondeur (identité, finalité, concepts clés).
-2. DÉTERMINER les éléments indispensables que l'élève doit absolument mémoriser (mustMemorize[]).
-3. CRÉER une fiche de révision courte, claire, fidèle et sans bavardage, nettement plus courte que le document source.
-4. PRÉPARER entre 3 et 5 questions de compréhension courtes pour valider la compréhension immédiate.
-5. PLANIFIER plusieurs quiz de révision espacés (J+1, J+7, J+14) avec distracteurs plausibles et formateurs.
-6. PRÉPARER des exercices d'application adaptés aux notions fondamentales et aux pièges fréquents.
-7. TOUS les concepts, règles, formules, questions et exercices DOIVENT comporter des sourceReferences précises pointant vers la section ou la page du document.
-8. INTERDICTION FORMELLE d'inventer des faits, formules ou notions absents du cours.`;
+PIPELINE PÉDAGOGIQUE REVIZO 2.0 (DIRECTIVES OBLIGATOIRES) :
+
+1. DÉDUPLICATION SÉMANTIQUE STRICTE :
+   - Extrais et fusionne les concepts : si une même notion apparaît plusieurs fois dans le cours source (rappel au début, exemple au milieu, résumé à la fin), produis UNE SEULE entrée dans concepts[].
+   - La déduplication est sémantique (même sens sous des formulations différentes), pas seulement textuelle.
+   - Conserve et agrège TOUTES les sourceReferences (toutes les pages/sections où la notion apparaît).
+   - Renseigne les variantes ou synonymes dans semanticAliases[].
+
+2. RICHESSE ET SIMPLICITÉ DE LA FICHE DE RÉVISION (sections[]) :
+   - Chaque notion "essential" et "important" du cours source DOIT avoir sa section dédiée, sans aucune omission.
+   - Sous-titre court et clair (subtitle) : pas de jargon académique intimidant (ex: "Pourquoi ça marche", "La règle d'or").
+   - Explication en langage simple (simpleExplanation) : explique la notion avec des mots courants, limpides, comme si tu l'expliquais à un ami, avant toute formalisation technique.
+   - Formulation technique (technicalFormulation) : définition ou formulation scientifique/académique rigoureuse.
+   - Analogie concrète (analogyOrExample) : comparaison imagée de la vie courante pour ancrer la notion dans le réel.
+   - Astuce mémo (mnemonicTip) : moyen mnémotechnique, phrase d'accroche ou astuce de mémorisation dès que pertinent.
+   - ⚠️ Piège fréquent (commonMistake) : encart signalant l'erreur classique ou la confusion fréquente à éviter.
+   - Points clés (keyTakeaways[]) : 2 à 3 points synthétiques et percutants.
+
+3. LUTTER CONTRE L'ENNUI (presentationFormat) :
+   - Alterne impérativement la structure d'une section à l'autre selon 4 formats tournants :
+     * "definition_directe" : approche frontale limpide, définition suivie d'exemples.
+     * "question_reponse" : question rhétorique intrigante que l'élève se pose, suivie de la réponse lumineuse.
+     * "mise_en_situation" : mini-scénario ou cas pratique concret introduisant le besoin de la règle.
+     * "comparaison_avant_apres" : contraste entre "Ce qu'on croit souvent" vs "Ce qui est vrai".
+   - Ne jamais enchaîner deux sections consécutives avec le même presentationFormat.
+
+4. DÉRIVATION EN CASCADE (ANTI-DOUBLON GLOBAL) :
+   - Les questions de compréhension (comprehensionQuestions), les QCM (quizPlan.quizzes[].questions) et les exercices (exercises) DOIVENT découler STRICTEMENT des concepts déjà dédupliqués (renseigne impérativement conceptId).
+   - Aucune notion ne doit être testée deux fois sous le même angle ou avec la même formulation dans des formats différents.
+
+5. VARIÉTÉ DES QUESTIONS :
+   - Alterne les types de questions (questionCategory) :
+     * "rappel_direct" : vérification de la mémoire d'un terme clé ou d'une règle.
+     * "application_concrete" : calcul, phrase à compléter ou cas pratique chiffré.
+     * "piege_confusion" : question ciblée sur l'erreur classique ou la confusion fréquente.
+     * "mise_en_situation" : scénario réaliste demandant de choisir la bonne interprétation.
+
+6. RÈGLE CARDINALE DE SÉCURITÉ & FIDÉLITÉ :
+   - Zéro invention ou hallucination d'information absente du document source.
+   - Tous les éléments doivent comporter des sourceReferences précises.`;
 
     parts.push({ text: instructionsPrompt });
 
     const systemInstruction = `Tu es le moteur pédagogique central de REVIZO.
-Ta mission est d'effectuer l'analyse intellectuelle complète du cours fourni par l'élève, de déterminer ce qu'il doit retenir, de synthétiser une révision fidèle et concise, puis de générer des questions de vérification, des quiz espacés et des exercices pratiques.
-RÈGLE CARDINALE : Zéro invention d'information absente du document. Toute affirmation doit être supportée par le cours.
+Ta mission est d'effectuer l'analyse intellectuelle complète du cours fourni par l'élève, de déterminer ce qu'il doit retenir, de synthétiser une fiche de révision captivante, riche, claire et sans aucun doublon, puis de générer des questions de vérification, des quiz espacés et des exercices pratiques.
+RÈGLES MAÎTRESSES :
+1. Déduplication sémantique stricte de tous les concepts (conservation de toutes les sourceReferences).
+2. Fiche de révision riche, engageante et accessible : sous-titre sans jargon, explication amicale d'abord, analogie concrète, astuce mémo, piège fréquent, exhaustivité sur notions essentielles et importantes.
+3. Rotation des 4 formats de présentation (définition directe, question-réponse, mise en situation, comparaison avant-après).
+4. Dérivation en cascade : questions, quiz et exercices reliés directement aux conceptId dédupliqués sans aucune redondance.
+5. Variété des types de questions (rappel direct, application concrète, piège/confusion, mise en situation).
+6. Zéro invention d'information absente du document.
 Tu réponds exclusivement en JSON structuré strict conforme au schéma demandé.`;
 
     const payload = {
@@ -392,15 +520,12 @@ Tu réponds exclusivement en JSON structuré strict conforme au schéma demandé
       ],
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: GEMINI_PEDAGOGICAL_SCHEMA,
-        thinkingConfig: {
-          thinkingBudget: 2048
-        }
+        responseSchema: GEMINI_PEDAGOGICAL_SCHEMA
       }
     };
 
-    // Appeler l'API Gemini 2.5 Flash avec gestion de version et retries
-    const candidateModels = ["gemini-2.5-flash", "gemini-3.6-flash", "gemini-flash-latest"];
+    // Appeler l'API Gemini Flash avec gestion de version et retries (priorité Flash-Lite économique)
+    const candidateModels = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.6-flash"];
     let geminiResponse: Response | null = null;
     let selectedModel = "";
 
@@ -434,6 +559,16 @@ Tu réponds exclusivement en JSON structuré strict conforme au schéma demandé
           error: "La photo n'est pas assez claire pour être analysée. Essaie avec une photo plus nette."
         }), {
           status: 422,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // En cas de saturation du service ou quota Gemini dépassé (429) après tous les retries
+      if (geminiResponse?.status === 429 || errText.includes("429") || errText.includes("RESOURCE_EXHAUSTED") || errText.includes("quota")) {
+        return new Response(JSON.stringify({
+          error: "Le service est très demandé, réessaie dans quelques instants."
+        }), {
+          status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
@@ -580,55 +715,96 @@ Tu réponds exclusivement en JSON structuré strict conforme au schéma demandé
 
     // 4. Persistance Révision
     const revisionId = `rev-${courseId}`;
-    const revisionSections = [
-      {
-        id: `sec-${courseId}-1`,
-        title: "Résumé Essentiel",
-        content: parsed.revision.essentialSummary,
-        orderIndex: 0
-      },
-      {
-        id: `sec-${courseId}-2`,
-        title: "Points Clés à Mémoriser",
-        content: parsed.revision.keyPoints.join("\n\n• "),
-        orderIndex: 1
+    let revisionSections: any[] = [];
+
+    if (Array.isArray(parsed.revision.sections) && parsed.revision.sections.length > 0) {
+      revisionSections = parsed.revision.sections.map((s: any, idx: number) => {
+        const parts: string[] = [];
+        if (s.subtitle) parts.push(`📌 ${s.subtitle}`);
+        if (s.simpleExplanation) parts.push(`💡 En clair :\n${s.simpleExplanation}`);
+        if (s.technicalFormulation) parts.push(`📐 Règle & Formulation :\n${s.technicalFormulation}`);
+        if (s.analogyOrExample) parts.push(`🌍 Analogie concrète :\n${s.analogyOrExample}`);
+        if (s.mnemonicTip) parts.push(`🧠 Astuce Mémo :\n${s.mnemonicTip}`);
+        if (s.commonMistake) parts.push(`⚠️ Piège fréquent :\n${s.commonMistake}`);
+
+        const assembledContent = parts.join('\n\n') || s.simpleExplanation || s.content || "Contenu pédagogique";
+
+        return {
+          id: s.id || `sec-${courseId}-${idx + 1}`,
+          conceptId: (s.conceptId && conceptIdMapping.get(s.conceptId)) || conceptsPayload[idx]?.id || null,
+          title: s.title,
+          subtitle: s.subtitle || null,
+          presentationFormat: s.presentationFormat || 'definition_directe',
+          simpleExplanation: s.simpleExplanation || null,
+          technicalFormulation: s.technicalFormulation || null,
+          analogyOrExample: s.analogyOrExample || null,
+          mnemonicTip: s.mnemonicTip || null,
+          commonMistake: s.commonMistake || null,
+          content: assembledContent,
+          keyTakeaways: Array.isArray(s.keyTakeaways) ? s.keyTakeaways : [],
+          sourceReferences: Array.isArray(s.sourceReferences) ? s.sourceReferences : [],
+          orderIndex: idx,
+          order: idx + 1
+        };
+      });
+    } else {
+      // Fallback si sections non spécifiées
+      revisionSections = [
+        {
+          id: `sec-${courseId}-1`,
+          title: "Résumé Essentiel",
+          content: parsed.revision.essentialSummary,
+          orderIndex: 0,
+          order: 1
+        },
+        {
+          id: `sec-${courseId}-2`,
+          title: "Points Clés à Mémoriser",
+          content: parsed.revision.keyPoints.join("\n\n• "),
+          orderIndex: 1,
+          order: 2
+        }
+      ];
+
+      if (parsed.revision.methods && parsed.revision.methods.length > 0) {
+        revisionSections.push({
+          id: `sec-${courseId}-3`,
+          title: "Méthodes & Procédures",
+          content: parsed.revision.methods.map((m: any) => `${m.name} :\n` + m.steps.map((s: string, i: number) => `  ${i + 1}. ${s}`).join("\n")).join("\n\n"),
+          orderIndex: 2,
+          order: 3
+        });
       }
-    ];
 
-    if (parsed.revision.methods && parsed.revision.methods.length > 0) {
-      revisionSections.push({
-        id: `sec-${courseId}-3`,
-        title: "Méthodes & Procédures",
-        content: parsed.revision.methods.map((m: any) => `${m.name} :\n` + m.steps.map((s: string, i: number) => `  ${i + 1}. ${s}`).join("\n")).join("\n\n"),
-        orderIndex: 2
-      });
-    }
+      if (parsed.revision.formulas && parsed.revision.formulas.length > 0) {
+        revisionSections.push({
+          id: `sec-${courseId}-4`,
+          title: "Formules & Règles",
+          content: parsed.revision.formulas.map((f: any) => `• ${f.expression} : ${f.meaning}`).join("\n"),
+          orderIndex: 3,
+          order: 4
+        });
+      }
 
-    if (parsed.revision.formulas && parsed.revision.formulas.length > 0) {
-      revisionSections.push({
-        id: `sec-${courseId}-4`,
-        title: "Formules & Règles",
-        content: parsed.revision.formulas.map((f: any) => `• ${f.expression} : ${f.meaning}`).join("\n"),
-        orderIndex: 3
-      });
-    }
+      if (parsed.revision.commonPitfalls && parsed.revision.commonPitfalls.length > 0) {
+        revisionSections.push({
+          id: `sec-${courseId}-5`,
+          title: "Pièges Fréquents à Éviter",
+          content: parsed.revision.commonPitfalls.map((p: string) => `⚠️ ${p}`).join("\n"),
+          orderIndex: 4,
+          order: 5
+        });
+      }
 
-    if (parsed.revision.commonPitfalls && parsed.revision.commonPitfalls.length > 0) {
-      revisionSections.push({
-        id: `sec-${courseId}-5`,
-        title: "Pièges Fréquents à Éviter",
-        content: parsed.revision.commonPitfalls.map((p: string) => `⚠️ ${p}`).join("\n"),
-        orderIndex: 4
-      });
-    }
-
-    if (parsed.revision.memorizationChecklist && parsed.revision.memorizationChecklist.length > 0) {
-      revisionSections.push({
-        id: `sec-${courseId}-6`,
-        title: "Checklist de Mémorisation",
-        content: parsed.revision.memorizationChecklist.map((c: string) => `[ ] ${c}`).join("\n"),
-        orderIndex: 5
-      });
+      if (parsed.revision.memorizationChecklist && parsed.revision.memorizationChecklist.length > 0) {
+        revisionSections.push({
+          id: `sec-${courseId}-6`,
+          title: "Checklist de Mémorisation",
+          content: parsed.revision.memorizationChecklist.map((c: string) => `[ ] ${c}`).join("\n"),
+          orderIndex: 5,
+          order: 6
+        });
+      }
     }
 
     const { error: revErr } = await userClient.from("revisions").upsert({
@@ -686,6 +862,7 @@ Tu réponds exclusivement en JSON structuré strict conforme au schéma demandé
       const mappedQuestions = primaryQuiz.questions.map((q: any, idx: number) => ({
         id: `qq-${primaryQuizId}-${idx + 1}`,
         conceptId: (q.conceptId && conceptIdMapping.get(q.conceptId)) || conceptsPayload[0]?.id || 'concept-1',
+        questionCategory: q.questionCategory || 'rappel_direct',
         question: q.question,
         choices: q.options || [],
         correctChoiceIndex: (q.options || []).indexOf(q.correctAnswer) >= 0 ? (q.options || []).indexOf(q.correctAnswer) : 0,
@@ -729,10 +906,13 @@ Tu réponds exclusivement en JSON structuré strict conforme au schéma demandé
       if (exErr) console.error("Exercises insert error:", exErr);
     }
 
+    console.log("Gemini Usage Metadata:", JSON.stringify(geminiData.usageMetadata));
+
     // Retourner le résultat structuré complet au frontend
     return new Response(JSON.stringify({
       success: true,
       modelUsed: selectedModel,
+      usage: geminiData.usageMetadata || null,
       course: {
         id: courseId,
         title: finalTitle,

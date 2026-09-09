@@ -18,11 +18,13 @@ export class QuizMapper {
             courseId: row.course_id,
             conceptId: q.conceptId || '',
             conceptName: 'Notion évaluée',
+            questionCategory: q.questionCategory,
             question: q.question,
             choices: q.choices || [],
             correctChoiceIndex: q.correctChoiceIndex ?? 0,
             explanation: q.explanation || '',
-            difficulty: (q.difficulty as 1 | 2 | 3) || 2
+            difficulty: (q.difficulty as 1 | 2 | 3) || 2,
+            sourceReferences: q.sourceReferences
           }))
         : []
     };
@@ -41,11 +43,13 @@ export class QuizMapper {
       row.questions = quiz.questions.map(q => ({
         id: q.id,
         conceptId: q.conceptId,
+        questionCategory: q.questionCategory,
         question: q.question,
         choices: q.choices,
         correctChoiceIndex: q.correctChoiceIndex,
         explanation: q.explanation,
-        difficulty: q.difficulty
+        difficulty: q.difficulty,
+        sourceReferences: q.sourceReferences
       }));
     }
     return row;

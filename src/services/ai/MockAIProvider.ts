@@ -34,17 +34,17 @@ export class MockAIProvider implements AIProvider {
     }
 
     // 2. Détermination du titre du cours
-    let cleanTitle = doc.titleCandidate.trim();
+    let cleanTitle = (doc.titleCandidate || '').trim();
     if (!cleanTitle || cleanTitle.length < 5 || /^(page|cours|document|chapitre\s*\d*$)/i.test(cleanTitle)) {
-      cleanTitle = doc.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+      cleanTitle = (doc.name || 'Cours de révision').replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
     }
     // Nettoyage majuscule initiale
     cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
 
     // 3. Découpage en sections thématiques à partir du texte réel
-    const paragraphs = doc.paragraphs.length > 0 
+    const paragraphs = (doc.paragraphs && doc.paragraphs.length > 0)
       ? doc.paragraphs 
-      : doc.text.split('\n\n').filter(p => p.trim().length > 20);
+      : (doc.text || '').split('\n\n').filter(p => p.trim().length > 20);
 
     const sections: { title: string; content: string; keyTakeaways: string[] }[] = [];
     const concepts: CourseConcept[] = [];
@@ -150,6 +150,12 @@ export class MockAIProvider implements AIProvider {
    */
   async generateRevision(analysis: CourseAnalysis): Promise<Revision> {
     const revisionId = `rev-${analysis.courseId}`;
+    const formats: ('definition_directe' | 'question_reponse' | 'mise_en_situation' | 'comparaison_avant_apres')[] = [
+      'definition_directe',
+      'question_reponse',
+      'mise_en_situation',
+      'comparaison_avant_apres'
+    ];
 
     return {
       id: revisionId,
@@ -157,13 +163,28 @@ export class MockAIProvider implements AIProvider {
       courseTitle: analysis.title,
       title: `Fiche Essentielle — ${analysis.title}`,
       summary: analysis.summary,
-      sections: analysis.sections.map((sec, idx) => ({
-        id: `sec-${analysis.courseId}-${idx + 1}`,
-        order: idx + 1,
-        title: sec.title,
-        content: sec.content,
-        keyTakeaways: sec.keyTakeaways
-      })),
+      sections: analysis.sections.map((sec, idx) => {
+        const format = formats[idx % formats.length];
+        const concept = analysis.concepts[idx] || analysis.concepts[0];
+        const conceptName = concept?.name || analysis.title;
+
+        return {
+          id: `sec-${analysis.courseId}-${idx + 1}`,
+          order: idx + 1,
+          title: sec.title,
+          subtitle: `Comprendre l'essentiel de ${conceptName}`,
+          presentationFormat: format,
+          simpleExplanation: `En deux mots : ${concept?.summary || sec.keyTakeaways[0] || sec.content.slice(0, 120)}. C'est le point de départ pour maîtriser le chapitre.`,
+          technicalFormulation: sec.content.slice(0, 180),
+          analogyOrExample: `Imagine ${conceptName} comme un levier : une fois compris, il simplifie tous les problèmes associés.`,
+          mnemonicTip: `Mémo rapide : retiens la règle clé et vérifie toujours les unités et les signes.`,
+          commonMistake: `Piège fréquent : aller trop vite sans poser les hypothèses de départ.`,
+          conceptId: concept?.id,
+          content: sec.content,
+          keyTakeaways: sec.keyTakeaways,
+          sourceReferences: [{ page: idx + 1, section: sec.title }]
+        };
+      }),
       totalSections: analysis.sections.length,
       keyConcepts: analysis.concepts.map(c => c.name),
       rulesFormulas: [],
@@ -179,10 +200,17 @@ export class MockAIProvider implements AIProvider {
   async generateQuiz(analysis: CourseAnalysis): Promise<Quiz> {
     const quizId = `qiz-${analysis.courseId}`;
     const questions: QuizQuestion[] = [];
+    const categories: ('rappel_direct' | 'application_concrete' | 'piege_confusion' | 'mise_en_situation')[] = [
+      'rappel_direct',
+      'application_concrete',
+      'piege_confusion',
+      'mise_en_situation'
+    ];
 
     // Pour chaque concept extrait, formulation d'une question d'évaluation ciblée
     analysis.concepts.forEach((concept, idx) => {
       const primaryKeyPoint = concept.keyPoints[0] || concept.summary;
+      const category = categories[idx % categories.length];
       
       // Question 1 : Vérification de la notion essentielle
       questions.push({
@@ -191,6 +219,7 @@ export class MockAIProvider implements AIProvider {
         courseId: analysis.courseId,
         conceptId: concept.id,
         conceptName: concept.name,
+        questionCategory: category,
         question: `Concernant « ${concept.name} », quelle affirmation est exacte d'après le cours ?`,
         choices: [
           primaryKeyPoint,
@@ -212,6 +241,7 @@ export class MockAIProvider implements AIProvider {
           courseId: analysis.courseId,
           conceptId: concept.id,
           conceptName: concept.name,
+          questionCategory: categories[(idx * 2 + 1) % categories.length],
           question: `Quel point clé doit-on obligatoirement retenir pour « ${concept.name} » ?`,
           choices: [
             `Une application aléatoire sans vérification des conditions préalables.`,
@@ -235,6 +265,7 @@ export class MockAIProvider implements AIProvider {
         courseId: analysis.courseId,
         conceptId: analysis.concepts[0]?.id || 'cpt-gen',
         conceptName: analysis.title,
+        questionCategory: categories[qIndex % categories.length],
         question: `Dans le cours « ${analysis.title} », quelle est la démarche méthodologique recommandée ?`,
         choices: [
           `Ignorer les étapes intermédiaires pour gagner du temps.`,

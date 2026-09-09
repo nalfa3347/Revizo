@@ -215,8 +215,17 @@ export class GeminiEdgeOrchestrator {
           id: s.id || `sec-${courseId}-${idx + 1}`,
           order: s.orderIndex ?? idx,
           title: s.title,
+          subtitle: s.subtitle,
+          presentationFormat: s.presentationFormat,
+          simpleExplanation: s.simpleExplanation,
+          technicalFormulation: s.technicalFormulation,
+          analogyOrExample: s.analogyOrExample,
+          mnemonicTip: s.mnemonicTip,
+          commonMistake: s.commonMistake,
+          conceptId: s.conceptId,
           content: s.content,
-          keyTakeaways: s.keyTakeaways || []
+          keyTakeaways: s.keyTakeaways || [],
+          sourceReferences: s.sourceReferences || []
         })),
         totalSections: data.revision.totalSections || data.revision.sections?.length || 0,
         isDownloaded: false,

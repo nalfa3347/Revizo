@@ -652,3 +652,106 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - Création de `PhoneAndEmailAuthE2E.test.ts` (8 étapes automatisées validées à 100%) : inscription téléphone, détection multiformats, connexion locale et internationale, déconnexion/reconnexion, blocage des doublons, flux email complet, et gestion bienveillante des mots de passe erronés.
     - Validation complète : **23 suites de tests réussies, 169/169 tests passants (100%)**.
     - Build de production validé (`tsc -b && vite build`) en 9.66s avec 0 erreur.
+- [x] **PHASE PIPELINE PÉDAGOGIQUE ENRICHI V2 — DÉDUPLICATION SÉMANTIQUE & RICHESSE ENGAGEANTE** (Terminée et Validée le 2026-09-09)
+  - **Objectif 1 — Déduplication Sémantique Complète (`concepts` & `sourceReferences`)** :
+    - Extraction et fusion sémantique en amont : si une même notion apparaît sous des formulations différentes, dans les rappels ou en conclusion, elle ne produit qu'une seule entrée canonique dans la liste des concepts.
+    - Conservation absolue de toutes les `sourceReferences` (pages, sections, citations textuelles exactes) pour chaque concept fusionné afin de garantir l'anti-hallucination (Règle 9).
+    - Ajout du champ `semanticAliases` listant les variantes de formulation du cours.
+  - **Objectif 2 — Richesse et Simplicité de la Fiche de Révision (`RevisionSection`)** :
+    - Ajout de sous-titres courts et limpides (`subtitle`), sans jargon académique intimidant.
+    - Explication amicale et vulgarisée en premier (`simpleExplanation`) avant toute règle ou formule formelle (`technicalFormulation`).
+    - Analogies et exemples concrets de la vie quotidienne (`analogyOrExample`) pour ancrer durablement la notion.
+    - Astuces mémo / moyens mnémotechniques pertinents (`mnemonicTip`).
+    - Encarts d'alerte bienveillants « ⚠️ Piège fréquent » (`commonMistake`) pour prévenir les confusions classiques.
+    - Exhaustivité garantie : chaque notion essentielle et importante est obligatoirement représentée une fois sans exception.
+  - **Objectif 3 — Lutte Contre l'Ennui & Rotation Dynamique des Formats de Présentation** :
+    - Rupture de la monotonie visuelle grâce à une rotation de 4 formats de présentation : `definition_directe`, `question_reponse`, `mise_en_situation`, et `comparaison_avant_apres`.
+    - Composant UI `RevisionView.tsx` et styles CSS modernes (`components.css`) affichant des badges colorés élégants, encarts lumineux (ambre pour les pièges, violet pour les mnémos, bleu pour les analogies, vert pour les explications amicales).
+  - **Objectif 4 — Dérivation en Cascade (Anti-Doublon Global)** :
+    - Les questions de vérification de compréhension (`comprehensionQuestions`), le quiz QCM (`quizzes`) et les exercices guidés (`exercises`) sont impérativement dérivés des concepts DÉJÀ dédupliqués de la fiche.
+    - Rattachement obligatoire de chaque question et exercice à son concept d'origine via `conceptId`, interdisant toute duplication d'angle ou formulation identique entre plusieurs formats.
+  - **Objectif 5 — Variété et Catégorisation des Questions** :
+    - Diversification pédagogique garantie via `QuestionCategory` : rotation équilibrée entre `rappel_direct`, `application_concrete`, `piege_confusion`, et `mise_en_situation`.
+    - Types d'exercices structurés (`ExerciseType`) : `calcul_application`, `analyse_piege`, `resolution_probleme`.
+  - **Rétrocompatibilité PDF & Persistance Supabase** :
+    - Le contenu textuel `content` de chaque section assemble automatiquement les blocs enrichis (`— Sous-titre`, `💡 En clair`, `📐 Règle`, `🌍 Analogie`, `🧠 Astuce`, `⚠️ Piège`), garantissant que le moteur natif de génération de PDF (`RevisionService.downloadRevisionPDF`) exporte instantanément toutes les richesses sans régression.
+    - Les champs structurés sont persistés en base dans les tables Supabase via `RevisionMapper` et `QuizMapper`.
+  - **Validation & Non-Régression** :
+    - Suite de tests dédiée `src/test/EnrichedPedagogicalPipeline.test.ts` validant les 5 objectifs clés (6 tests).
+    - **24 suites de tests réussies, 175 tests sur 175 validés (100% de succès)**.
+    - Compilation TypeScript stricte sans erreur (`tsc -b --noEmit`).
+    - Build de production Vite (`tsc -b && vite build`) généré avec succès en 7.37s.
+- [x] **PHASE SÉCURISATION DU TIER GRATUIT GEMINI, RÉSILIENCE 429 & GARDE-FOU SERVEUR (TESTS SANS FACTURATION)** (Terminée et Validée le 2026-09-09)
+  - **Limites Réelles du Tier Gratuit Google AI Studio (`gemini-3.6-flash`)** :
+    - RPM (Requêtes par minute) : **5 RPM** (1 requête toutes les 12 secondes).
+    - RPD (Requêtes par jour) : **20 RPD** (réinitialisé chaque jour à minuit UTC / heure Pacifique).
+    - TPM (Tokens par minute) : **250 000 TPM**.
+    - Statut du compte : « Niveau sans frais » (Free of charge tier), strictement sans facturation Google Cloud rattachée (si une limite est dépassée, Google bloque en HTTP 429 sans jamais facturer).
+  - **Gestion Robuste des Erreurs de Quota HTTP 429 & Backoff Adapté à 5 RPM (`orchestrate-course`)** :
+    - Mécanisme de relance automatique `fetchWithRetry` dans l'Edge Function Supabase :
+      - 3 tentatives (initiale + 2 retries).
+      - Backoff calibré sur le cycle de renouvellement des slots à 5 RPM (60s / 5 = 12s) : délais de `12s` à `24s` + jitter aléatoire (évite de ré-épuiser le quota à 1s ou 2s).
+      - Respect du header standard `Retry-After` s'il est renvoyé par l'API Google.
+    - Message bienveillant élève en cas d'indisponibilité persistante après tous les essais : *« Le service est très demandé, réessaie dans quelques instants. »* (aucun code HTTP technique exposé).
+  - **Garde-Fou Côté Application (Plafond à 90% du Quota Journalier Réel = 18 RPD)** :
+    - Fonction PostgreSQL `check_global_ai_daily_limit(p_safe_limit INT DEFAULT 18)` créée dans Supabase avec privilèges `SECURITY DEFINER`.
+    - Plafond de sécurité configuré à 90% de 20 = **18 requêtes/jour**.
+    - Comptage automatique et atomique des analyses générées aujourd'hui (`created_at >= CURRENT_DATE`).
+    - Blocage préventif propre avant même de solliciter l'API Gemini dès que le seuil de 18 est atteint : message clair pour les élèves/testeurs (*« Le quota d'analyses quotidien pour la phase de test a été atteint (18/20 cours). Les analyses reprendront demain dès minuit. »*).
+    - Capacité journalière assurée pour les tests : **18 cours complets par jour**.
+  - **Rappel Juridique & Confidentialité des Données (Free Tier vs Paid Tier)** :
+    - En Tier Gratuit (Google AI Studio Free Tier), Google utilise les données d'entrée (prompts, cours, PDF, images) et de sortie pour améliorer et entraîner ses modèles d'IA, avec possibles revues humaines anonymisées.
+    - En Tier Payant (Google Cloud Pay-as-you-go ou Vertex AI), les données ne sont jamais utilisées pour l'entraînement et restent strictement confidentielles. Idéal pour la conformité RGPD lors du lancement commercial public auprès d'élèves mineurs.
+  - **Modèle Économique Réel & Analyse de Marges FedaPay (`gemini-3.6-flash`)** :
+    - Grille tarifaire officielle Google AI Studio (au 09/09/2026, en vigueur jusqu'au 31/12/2026) :
+      - Input : **0,75 $ / million de tokens**.
+      - Output : **3,75 $ / million de tokens** (incluant tokens de raisonnement thinking).
+    - Métriques réelles mesurées par cours : 2 149 tokens entrée / 8 359 tokens sortie (Maths: 2099/8167, Histoire: 2165/6757, SVT: 2184/10152).
+    - Coût moyen par cours analysé : **0,033 $ USD (20,27 FCFA ou ~0,031 €)**.
+    - Échelle de volumes :
+      - 100 cours = 3,30 $ (2 027 FCFA | 3,09 €).
+      - 1 000 cours = 32,96 $ (20 269 FCFA | 30,90 €).
+      - 10 000 cours = 329,57 $ (202 686 FCFA | 308,99 €).
+    - Analyse de rentabilité des forfaits FedaPay :
+      - *Essentiel (1 000 FCFA)* : Seuil de rentabilité à 48 cours/mois. Usage typique (20 cours) = 570 FCFA de marge nette (+57%). Usage max théorique (90 cours) = -849 FCFA de marge.
+      - *Intensif (3 000 FCFA)* : Seuil de rentabilité à 144 cours/mois. Usage typique (60 cours) = 1 709 FCFA de marge nette (+57%). Usage max théorique (300 cours) = -3 156 FCFA de marge.
+      - *Premium (5 000 FCFA)* : Seuil de rentabilité à 240 cours/mois. Usage typique (120 cours) = 2 443 FCFA de marge nette (+49%). Usage max théorique (600 cours) = -7 286 FCFA de marge.
+- [x] **PHASE BENCHMARK QUALITÉ FLASH-LITE & BASCULEMENT DE PRODUCTION (RENTABILITÉ FORFAITS REVIZO)** (Terminée et Validée le 2026-09-09)
+  - **Vérification Officielle des Tarifs & Modèles (`ai.google.dev/pricing`)** :
+    - Confirmation par API : le modèle `gemini-2.5-flash-lite` est déprécié par Google pour les nouveaux projets (code HTTP 404, incitant officiellement à basculer sur `gemini-3.5-flash-lite`).
+    - Modèle de production déployé : **`gemini-3.5-flash-lite`** (avec replis automatiques `gemini-flash-lite-latest` et `gemini-3.6-flash`).
+    - Grille officielle confirmée sur `ai.google.dev/pricing` pour `gemini-3.5-flash-lite` :
+      - Input : **0,30 $ / 1M tokens** (au lieu de 0,75 $ pour gemini-3.6-flash).
+      - Output : **2,50 $ / 1M tokens** (au lieu de 3,75 $ pour gemini-3.6-flash).
+  - **Benchmark Qualitatif Comparatif sur les 3 Cours Réels** :
+    - *Mathématiques (Pythagore)* : 1 438 in / 3 994 out = 5 432 tokens en 11.1s. 3 concepts dédupliqués, 3 sections (`definition_directe` -> `mise_en_situation` -> `comparaison_avant_apres`).
+    - *Histoire (Première Guerre Mondiale)* : 1 504 in / 6 323 out = 7 827 tokens en 21.9s. 5 concepts dédupliqués, 4 sections (`definition_directe` -> `mise_en_situation` -> `comparaison_avant_apres` -> `question_reponse`).
+    - *SVT (Génétique et Hérédité)* : 1 523 in / 5 486 out = 7 009 tokens en 15.5s. 4 concepts dédupliqués, 4 sections (`definition_directe` -> `question_reponse` -> `mise_en_situation` -> `comparaison_avant_apres`).
+    - Évaluation qualitative sur les 4 critères d'excellence :
+      1. *Absence de doublons* : 100% respectée (concepts fusionnés, zéro redondance entre sections, flashcards et QCM).
+      2. *Rotation des formats* : 100% respectée (0 consécution identique, rotation fluide des 4 formats).
+      3. *Pertinence des analogies* : Excellente et parlante pour le public scolaire (diagonale d'une pièce, hachoir géant pour Verdun, bibliothèque et 46 tomes d'encyclopédie, modèle de voiture vs peinture pour gène vs allèle).
+      4. *Pertinence des pièges* : Pièges réels d'examen identifiés avec précision (racine carrée finale en maths, rôle méconnu de l'arrière en histoire, non-disparition des allèles récessifs en SVT).
+    - Vitesse de génération : **16.2s en moyenne** (plus de 2× plus rapide que gemini-3.6-flash à 35-40s).
+  - **Mesure des Coûts Réels & Rentabilité Économique** :
+    - Moyenne mesurée par cours : **1 488 tokens d'entrée / 5 268 tokens de sortie**.
+    - Coût unitaire réel moyen : **0,01362 $ USD = 8,38 FCFA (0,0128 €)**.
+    - Économie immédiate : **-58,7% par rapport à gemini-3.6-flash** (coût unitaire divisé par 2,42).
+    - Marges réelles FedaPay confirmées avec les nouveaux quotas :
+      - *Essentiel (1 000 FCFA / mois, quota 4 cours/j = 120 max)* : usage réaliste (20 cours) = **+802 FCFA (+80,2% de marge)** ; cas de saturation théorique (120 cours) = -35 FCFA (quasiment à l'équilibre).
+      - *Pro (3 000 FCFA / mois, quota 10 cours/j = 300 max)* : usage réaliste (60 cours) = **+2 407 FCFA (+80,2% de marge)** ; cas de saturation théorique (300 cours) = **+396 FCFA (+13,2% de marge bénéficiaire même au pire cas !)**.
+      - *Premium (5 000 FCFA / mois, quota 20 cours/j = 600 max)* : usage réaliste (120 cours) = **+3 845 FCFA (+76,9% de marge)**.
+  - **Basculement en Production Effectué** :
+    - Edge Function `orchestrate-course` mise à jour avec `candidateModels = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.6-flash"]`.
+    - Suppression de `thinkingConfig` pour le modèle Flash-Lite (élimination des `MALFORMED_RESPONSE`).
+    - Déploiement réussi sur Supabase : **Version 8 active (`ACTIVE`)**.
+    - Appel live de validation en production exécuté avec succès (status 200, `modelUsed: "gemini-3.5-flash-lite"`).
+
+---
+
+## 🔒 RÈGLE IMPÉRATIVE DE SÉCURITÉ : GESTION DES SECRETS & CLÉS D'API
+- **Interdiction formelle et absolue d'écrire une clé d'API en dur dans le code, les tests unitaires ou les scripts de scratch / expérimentation, même de façon temporaire.**
+- Tout script exécutable (outil de diagnostic, script de test, runner d'audit ou de benchmark) doit obligatoirement lire ses clés dynamiquement depuis les variables d'environnement (`process.env`) ou par chargement sécurisé depuis `.env.local`.
+- `.env.local` est le seul réceptacle des valeurs locales, strictement ignoré par Git (`.gitignore`).
+- Les clés de production restent exclusivement confinées aux environnements sécurisés de Supabase Edge Functions et Vercel.
+

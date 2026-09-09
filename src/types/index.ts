@@ -52,6 +52,24 @@ export interface Subject {
   level?: number;
 }
 
+export type SectionPresentationFormat = 
+  | 'definition_directe' 
+  | 'question_reponse' 
+  | 'mise_en_situation' 
+  | 'comparaison_avant_apres';
+
+export type QuestionCategory = 
+  | 'rappel_direct' 
+  | 'application_concrete' 
+  | 'piege_confusion' 
+  | 'mise_en_situation';
+
+export type ExerciseType = 
+  | 'application_directe' 
+  | 'cas_pratique' 
+  | 'analyse_piege' 
+  | 'resolution_probleme';
+
 export interface SourceReference {
   page?: number;
   section?: string;
@@ -80,6 +98,7 @@ export interface CourseConcept {
   masteryScore: number; // 0 à 100%
   keyPoints: string[];
   rulesFormulas?: string[];
+  semanticAliases?: string[];
   prerequisites?: string[];
   relatedConcepts?: string[];
   sourceReferences?: SourceReference[];
@@ -90,6 +109,14 @@ export interface RevisionSection {
   id: string;
   order: number;
   title: string;
+  subtitle?: string;
+  presentationFormat?: SectionPresentationFormat;
+  simpleExplanation?: string;
+  technicalFormulation?: string;
+  analogyOrExample?: string;
+  mnemonicTip?: string;
+  commonMistake?: string;
+  conceptId?: string;
   content: string;
   keyTakeaways: string[];
   formulas?: string[];
@@ -203,6 +230,7 @@ export interface QuizQuestion {
   courseId: string;
   conceptId: string;
   conceptName: string;
+  questionCategory?: QuestionCategory;
   question: string;
   choices: string[];
   correctChoiceIndex: number;
@@ -230,6 +258,7 @@ export interface ComprehensionQuestion {
   id: string;
   courseId: string;
   conceptId?: string;
+  questionCategory?: QuestionCategory;
   question: string;
   expectedAnswer: string;
   explanation: string;
@@ -244,6 +273,7 @@ export interface Exercise {
   id: string;
   courseId: string;
   conceptId?: string;
+  exerciseType?: ExerciseType;
   statement: string;
   instructions: string;
   expectedMethod?: string;
