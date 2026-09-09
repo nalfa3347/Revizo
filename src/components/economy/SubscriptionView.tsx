@@ -265,10 +265,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack }) =>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
                 <Check size={16} color="#10B981" strokeWidth={2.5} />
-                <span><strong>10 ⚡</strong> d'énergie max</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
-                <Check size={16} color="#10B981" strokeWidth={2.5} />
                 <span><strong>10 💎</strong> offerts à l'inscription</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
@@ -369,10 +365,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack }) =>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
                 <Check size={16} color="#10B981" strokeWidth={2.5} />
-                <span><strong>20 ⚡</strong> d'énergie max</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
-                <Check size={16} color="#10B981" strokeWidth={2.5} />
                 <span><strong>30 💎</strong> offerts à l'inscription</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
@@ -453,10 +445,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack }) =>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
                 <Check size={16} color="#10B981" strokeWidth={2.5} />
-                <span><strong>30 ⚡</strong> d'énergie max</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
-                <Check size={16} color="#10B981" strokeWidth={2.5} />
                 <span><strong>60 💎</strong> offerts à l'inscription</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1F2937' }}>
@@ -514,7 +502,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack }) =>
             Paiements sécurisés via FedaPay
           </div>
           <div style={{ fontSize: '0.8rem', color: '#6B7280', lineHeight: 1.45 }}>
-            Accepte <strong>MTN Mobile Money, Moov Money, Orange Money, Wave</strong> et <strong>Cartes Bancaires (Visa, Mastercard)</strong>.
+            Accepte <strong>MTN Mobile Money, Moov Money, Orange Money, Wave</strong>.
             Chaque transaction est traitée sur le guichet crypté officiel de FedaPay. Vos abonnements et quotas sont activés instantanément dès confirmation.
           </div>
         </div>

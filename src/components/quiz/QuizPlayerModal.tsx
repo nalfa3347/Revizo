@@ -50,7 +50,7 @@ export const QuizPlayerModal: React.FC<QuizPlayerModalProps> = ({
     } else {
       await gamificationService.deductEnergyOnMistake();
     }
-    await refreshProgress();
+    await Promise.all([refreshProgress(), refreshEconomy()]);
   };
 
   const handleNext = async () => {
@@ -152,7 +152,7 @@ export const QuizPlayerModal: React.FC<QuizPlayerModalProps> = ({
               }}
             >
               <Zap size={14} fill="currentColor" />
-              <span>{economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10}/{economy?.energy.maxEnergy ?? 10}</span>
+              <span>{economy?.energy.currentEnergy ?? progress?.energyBalance ?? 0}/{economy?.energy.maxEnergy ?? 3}</span>
             </div>
 
             <button

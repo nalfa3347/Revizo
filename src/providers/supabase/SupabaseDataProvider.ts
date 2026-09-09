@@ -413,7 +413,9 @@ export class SupabaseDataProvider implements IDataProvider {
     session.energyRemaining = Math.max(0, session.energyRemaining - energyLost);
 
     if (energyLost > 0) {
-      await this.progressRepo.deductEnergy(this.currentUserId, energyLost);
+      await this.consumeEnergy(energyLost, 'Erreur quiz', attempt.questionId).catch(err => {
+        console.warn('[SupabaseDataProvider] Erreur déduction énergie via RPC consume_energy :', err);
+      });
     }
     await this.progressRepo.addXP(this.currentUserId, xpEarned);
 

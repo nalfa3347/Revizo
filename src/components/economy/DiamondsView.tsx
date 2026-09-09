@@ -34,8 +34,8 @@ export const DiamondsView: React.FC<DiamondsViewProps> = ({
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   const diamondsBalance = economy?.diamonds.balance ?? 0;
-  const currentEnergy = economy?.energy.currentEnergy ?? 10;
-  const maxEnergy = economy?.energy.maxEnergy ?? 10;
+  const currentEnergy = economy?.energy.currentEnergy ?? 0;
+  const maxEnergy = economy?.energy.maxEnergy ?? 3;
   const dailyRefillsUsed = economy?.energy.diamondsConvertedToday ?? economy?.energy.dailyRefillsUsed ?? 0;
   const maxDailyRefills = economy?.energy.maxDailyDiamondConversions ?? 10;
 

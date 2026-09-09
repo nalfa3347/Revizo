@@ -97,22 +97,22 @@ describe('REVIZO — Intégration FedaPay (Paiements Mobile Money & Cartes)', ()
       const refServiceB = new ReferralService(providerB);
       await refServiceB.applyReferralCode(codeA);
 
-      // Le parrain n'a rien reçu à la simple inscription
-      expect((await ecoServiceA.getEconomyState()).diamonds.balance).toBe(initialDiamondsA);
+      // Le parrain reçoit immédiatement +5 💎 dès l'inscription
+      expect((await ecoServiceA.getEconomyState()).diamonds.balance).toBe(initialDiamondsA + 5);
 
       // 3. Filleul B souscrit et valide son paiement FedaPay
       const monServiceB = new MonetizationService(providerB);
       const checkoutB = await monServiceB.createCheckoutSession('intensif');
       await monServiceB.activateSubscription('intensif', checkoutB.transactionId, 'fedapay');
 
-      // 4. Le parrain reçoit exactement +10 💎
+      // 4. Le parrain reçoit exactement +10 💎 supplémentaires (total: initial + 15 💎)
       const diamondsAAfter = (await ecoServiceA.getEconomyState()).diamonds.balance;
-      expect(diamondsAAfter).toBe(initialDiamondsA + 10);
+      expect(diamondsAAfter).toBe(initialDiamondsA + 15);
 
       // 5. Un rechargement ou webhook dupliqué ne recrédite pas le parrain
       await monServiceB.activateSubscription('intensif', checkoutB.transactionId, 'fedapay');
       const diamondsAAfterDuplicate = (await ecoServiceA.getEconomyState()).diamonds.balance;
-      expect(diamondsAAfterDuplicate).toBe(initialDiamondsA + 10);
+      expect(diamondsAAfterDuplicate).toBe(initialDiamondsA + 15);
     });
   });
 });

@@ -363,6 +363,10 @@ export class MockDataProvider implements IDataProvider {
     if (!isCorrect) {
       session.energyRemaining = Math.max(0, session.energyRemaining - 1);
       this.progress.energyBalance = session.energyRemaining;
+      const uEnergy = this.userEnergy.get(this.profile.id);
+      if (uEnergy) {
+        uEnergy.currentEnergy = session.energyRemaining;
+      }
       // Ajuste la maîtrise du concept
       const concept = this.concepts.find(c => c.id === attempt.conceptId);
       if (concept) {
@@ -915,9 +919,39 @@ export class MockDataProvider implements IDataProvider {
       referrerRef.totalReferrals += 1;
     }
 
+    // PALIER 1 : Créditer +5 💎 au parrain A
+    this.initUserEconomy(referrerId);
+    const referrerDiamonds = this.userDiamonds.get(referrerId);
+    if (referrerDiamonds) {
+      referrerDiamonds.balance += 5;
+      this.diamondTransactions.unshift({
+        id: `dtx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        userId: referrerId,
+        amount: 5,
+        balanceAfter: referrerDiamonds.balance,
+        reason: 'Parrainage d\'un ami (inscription)',
+        referenceId: `referral_signup_referrer:${userId}`,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    // PALIER 1 : Créditer +5 💎 au filleul B
+    const refereeDiamonds = this.userDiamonds.get(userId)!;
+    refereeDiamonds.balance += 5;
+    this.progress.diamondsBalance = refereeDiamonds.balance;
+    this.diamondTransactions.unshift({
+      id: `dtx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      userId,
+      amount: 5,
+      balanceAfter: refereeDiamonds.balance,
+      reason: 'Bonus de bienvenue parrainage (inscription)',
+      referenceId: `referral_signup_referee:${userId}`,
+      createdAt: new Date().toISOString()
+    });
+
     return {
       success: true,
-      message: 'Code de parrainage appliqué ! Ton parrain recevra 10 💎 dès ton premier abonnement.'
+      message: 'Code validé ! Tu as reçu +5 💎 et ton parrain a aussi reçu +5 💎. Il recevra +10 💎 supplémentaires lors de ton premier abonnement.'
     };
   }
 

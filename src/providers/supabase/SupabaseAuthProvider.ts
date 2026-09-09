@@ -314,6 +314,17 @@ export class SupabaseAuthProvider implements IAuthProvider {
       }
     }
 
+    if (signUpData.referralCode && data.user) {
+      try {
+        await (this.client as any).rpc('apply_referral_code', {
+          p_user_id: data.user.id,
+          p_referral_code: signUpData.referralCode.trim()
+        });
+      } catch (refErr) {
+        console.warn('[SupabaseAuthProvider] Application du code de parrainage à l\'inscription :', refErr);
+      }
+    }
+
     return newProfile;
   }
 

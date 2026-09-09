@@ -53,6 +53,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [signupDisplayName, setSignupDisplayName] = useState('');
   const [signupGrade, setSignupGrade] = useState<SchoolLevel>('3e');
+  const [signupReferralCode, setSignupReferralCode] = useState('');
 
   // --- ÉTAT ONBOARDING ---
   const [createdUserName, setCreatedUserName] = useState('');
@@ -170,7 +171,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
         identifierType: signupMethod,
         password: trimmedPwd,
         displayName: trimmedName,
-        gradeLevel: signupGrade
+        gradeLevel: signupGrade,
+        referralCode: signupReferralCode.trim() ? signupReferralCode.trim().toUpperCase() : undefined
       });
 
       setCreatedUser(newUser);
@@ -667,6 +669,28 @@ export const AuthView: React.FC<AuthViewProps> = ({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* ÉTAPE 5 : CODE DE PARRAINAGE (FACULTATIF) */}
+              <div className="auth-field-group">
+                <label htmlFor="signup-referral" className="auth-field-label">
+                  5. Code d'invitation d'un ami (facultatif)
+                </label>
+                <div className="auth-input-wrapper">
+                  <Sparkles size={18} className="auth-input-icon" />
+                  <input
+                    id="signup-referral"
+                    type="text"
+                    value={signupReferralCode}
+                    onChange={e => setSignupReferralCode(e.target.value.toUpperCase())}
+                    placeholder="ex : REV-ABC123"
+                    className="auth-input"
+                    style={{ letterSpacing: '0.04em', textTransform: 'uppercase' }}
+                  />
+                </div>
+                <span className="auth-field-hint">
+                  Reçois immédiatement +5 💎 et fais gagner +5 💎 à ton parrain dès ton inscription.
+                </span>
               </div>
 
               {/* BOUTON CRÉATION DE COMPTE */}

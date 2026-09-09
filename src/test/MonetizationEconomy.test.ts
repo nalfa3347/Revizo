@@ -267,9 +267,9 @@ describe('REVIZO — Système Économique, Abonnements, Énergie, Diamants & Par
       const applied = await provider.applyReferralCode('REV-REF001');
       expect(applied.success).toBe(true);
 
-      // Vérifier que le parrain n'a PAS encore reçu de diamants
+      // Le parrain reçoit immédiatement +5 💎 dès l'inscription
       const referrerDiamonds = (provider as any).userDiamonds.get(referrerId).balance;
-      expect(referrerDiamonds).toBe(20);
+      expect(referrerDiamonds).toBe(25); // 20 + 5
     });
 
     it('attribue exactement +10 💎 au parrain APRÈS premier abonnement payant du filleul', async () => {
@@ -283,15 +283,16 @@ describe('REVIZO — Système Économique, Abonnements, Énergie, Diamants & Par
       });
       (provider as any).userDiamonds.set(referrerId, { balance: 15 });
 
-      // L'utilisateur courant applique le code
+      // L'utilisateur courant applique le code (+5 💎 parrain, +5 💎 filleul)
       await provider.applyReferralCode('REV-PARRAIN');
+      expect((provider as any).userDiamonds.get(referrerId).balance).toBe(20); // 15 + 5
 
-      // L'utilisateur prend son premier abonnement payant
+      // L'utilisateur prend son premier abonnement payant (+10 💎 supplémentaires)
       await monetizationService.subscribe('essentiel', 'fedapay_test', 'sub-referee-paid');
 
-      // Le parrain doit avoir reçu +10 💎
+      // Le parrain doit avoir reçu +10 💎 supplémentaires
       const referrerAccount = (provider as any).userDiamonds.get(referrerId);
-      expect(referrerAccount.balance).toBe(25); // 15 + 10
+      expect(referrerAccount.balance).toBe(30); // 20 + 10
     });
 
     it('n’attribue pas de double récompense si le filleul souscrit un deuxième abonnement', async () => {
@@ -305,15 +306,17 @@ describe('REVIZO — Système Économique, Abonnements, Énergie, Diamants & Par
       });
       (provider as any).userDiamonds.set(referrerId, { balance: 10 });
 
+      // Inscription (+5 💎)
       await provider.applyReferralCode('REV-MULTI');
+      expect((provider as any).userDiamonds.get(referrerId).balance).toBe(15); // 10 + 5
 
-      // 1er abonnement -> +10 💎
+      // 1er abonnement -> +10 💎 supplémentaires
       await monetizationService.subscribe('essentiel', 'fedapay_test', 'sub-pay-1');
-      expect((provider as any).userDiamonds.get(referrerId).balance).toBe(20);
+      expect((provider as any).userDiamonds.get(referrerId).balance).toBe(25); // 15 + 10
 
       // 2e abonnement (renouvellement ou upgrade) -> aucune nouvelle récompense
       await monetizationService.subscribe('intensif', 'fedapay_test', 'sub-pay-2');
-      expect((provider as any).userDiamonds.get(referrerId).balance).toBe(20);
+      expect((provider as any).userDiamonds.get(referrerId).balance).toBe(25);
     });
 
     it('interdit d’avoir plus d’un parrain par compte', async () => {

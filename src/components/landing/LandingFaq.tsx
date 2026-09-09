@@ -15,7 +15,7 @@ export const LandingFaq: React.FC = () => {
     },
     {
       q: "Quels sont les moyens de paiement acceptés pour les abonnements ?",
-      a: "REVIZO intègre la passerelle sécurisée FedaPay. Vous pouvez payer en toute simplicité en Francs CFA via MTN Mobile Money, Moov Money, Orange Money, Wave, Celtiis ou par Carte Bancaire (Visa / Mastercard)."
+      a: "REVIZO intègre la passerelle sécurisée FedaPay. Vous pouvez payer en toute simplicité en Francs CFA par Mobile Money (MTN, Moov, Orange, Wave, Celtiis)."
     },
     {
       q: "Puis-je utiliser REVIZO sur mon téléphone portable ?",

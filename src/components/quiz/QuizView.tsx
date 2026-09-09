@@ -164,7 +164,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
     }
 
     // Vérification de l'énergie disponible
-    const currentEnergy = economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10;
+    const currentEnergy = economy?.energy.currentEnergy ?? progress?.energyBalance ?? 0;
     if (currentEnergy <= 0) {
       setNoticeMsg("Plus d'énergie disponible (0 ⚡). Tu peux convertir 5 💎 en 1 ⚡ dans 'Mes diamants' ou attendre la prochaine recharge.");
       return;
@@ -236,7 +236,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
       setUserAnswers(prev => new Map(prev).set(currentIndex, record));
       setIsAnswerSubmitted(true);
-      await refreshProgress();
+      await Promise.all([refreshProgress(), refreshEconomy()]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur lors de la validation.';
       setNoticeMsg(msg);
@@ -525,7 +525,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
             <div className="quiz-stat-pill energy" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
               <Zap size={14} fill="currentColor" />
-              <span>{economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10}/{economy?.energy.maxEnergy ?? 10}</span>
+              <span>{economy?.energy.currentEnergy ?? progress?.energyBalance ?? 0}/{economy?.energy.maxEnergy ?? 3}</span>
             </div>
           </div>
 
@@ -927,14 +927,14 @@ export const QuizView: React.FC<QuizViewProps> = ({
       {/* 4. BANDEAU DISCRET DE GAMIFICATION */}
       <div className="quiz-gamification-bar">
         <div className="quiz-gamification-stats">
-          <div className={`quiz-stat-pill energy ${(progress?.energyBalance ?? 3) <= 0 ? 'empty' : ''}`}>
+          <div className={`quiz-stat-pill energy ${(economy?.energy.currentEnergy ?? progress?.energyBalance ?? 0) <= 0 ? 'empty' : ''}`}>
             <Zap size={16} fill="currentColor" />
-            <span>{progress?.energyBalance ?? 3} / 3 énergies</span>
+            <span>{economy?.energy.currentEnergy ?? progress?.energyBalance ?? 0} / {economy?.energy.maxEnergy ?? 3} énergies</span>
           </div>
 
           <div className="quiz-stat-pill diamonds">
             <Gem size={16} />
-            <span>{progress?.diamondsBalance ?? 0} diamants</span>
+            <span>{economy?.diamonds.balance ?? progress?.diamondsBalance ?? 0} diamants</span>
           </div>
 
           <div className="quiz-stat-pill streak">
@@ -943,10 +943,10 @@ export const QuizView: React.FC<QuizViewProps> = ({
           </div>
         </div>
 
-        {(progress?.energyBalance ?? 3) <= 0 && (
+        {(economy?.energy.currentEnergy ?? progress?.energyBalance ?? 0) <= 0 && (
           <button className="quiz-refill-btn" onClick={handleRefillEnergy}>
             <Zap size={14} fill="currentColor" />
-            <span>Recharger (10 💎)</span>
+            <span>Recharger (5 💎)</span>
           </button>
         )}
       </div>

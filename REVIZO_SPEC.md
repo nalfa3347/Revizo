@@ -817,6 +817,62 @@ L'apparence officielle de REVIZO est dictée par les captures de référence fou
     - 181/181 tests unitaires et d'intégration Vitest validés à 100% sans aucune régression.
     - Build de production `tsc -b && vite build` validé avec succès en 18.31s.
 
+- [x] **PHASE ALIGNEMENT OFFRE LANDING PAGE, PURGE CB, SUPPRESSION ÉNERGIE MAX, ÉTANCHÉITÉ ÉNERGIE QUIZ & PARRAINAGE DEUX PALIERS** (Terminée et Validée le 2026-09-09)
+  - **Tâche 1 — Alignement Landing Page sur la Vraie Offre App & Source Unique de Vérité** :
+    - *Création de la source de vérité unique* : `src/config/subscriptionPlans.ts` centralise désormais la définition officielle des 4 formules (`SUBSCRIPTION_PLANS` et `ORDERED_PLANS`) consommée à la fois par `SubscriptionView.tsx` (in-app), `LandingPricing.tsx` (public), `LandingFaq.tsx` et les tests d'intégration.
+    - *Harmonisation stricte des forfaits et quotas journaliers* :
+      1. **Essai Gratuit** : 0 FCFA à vie, 1 seul cours gratuit à vie (aucune mention de 2 cours ni de renouvellement mensuel).
+      2. **Essentiel** : 1 000 FCFA/mois, 4 révisions/jour (et non "10/mois"), 10 diamants offerts.
+      3. **Intensif (Pro)** : 3 000 FCFA/mois, 10 révisions/jour (et non "illimité"), 30 diamants offerts.
+      4. **Premium** : 5 000 FCFA/mois, 18 révisions/jour (quota explicite), 60 diamants offerts.
+    - *Résultat* : Aucune désynchronisation possible entre la landing page et l'application in-app.
+  - **Tâche 2 — Suppression Totale des Mentions Carte Bancaire & Mobile Money Exclusif** :
+    - *Règle respectée* : Retrait de toute référence à la carte bancaire ou aux banques, sans justification superflue.
+    - *Formulation officielle adoptée* : *"Tarifs simples en Francs CFA, payables facilement par Mobile Money (MTN, Moov, Orange, Wave)."*
+    - *Fichiers assainis* : `LandingPricing.tsx`, `LandingFaq.tsx`, `SubscriptionView.tsx`.
+  - **Tâche 3 — Retrait de la Ligne "X ⚡ d'énergie max" des Cartes Payantes** :
+    - Suppression complète de la ligne "10/20/30 ⚡ d'énergie max" des 3 cartes d'abonnement in-app (`SubscriptionView.tsx`).
+    - Seuls les avantages réels sont conservés : révisions par jour, diamants offerts à l'inscription, accès illimité aux fiches, quiz renforcés, traitement IA prioritaire.
+  - **Tâche 4 — Suppression de la Récupération Gratuite d'Énergie sur Erreur Quiz & Sécurisation de la Jauge** :
+    - *Diagnostic et cause racine* : Déconnexion historique entre `user_progress.energy_balance` et la table `user_energy` lors des erreurs de quiz, combinée à des fallbacks d'UI laxistes (`energy ?? 10`). L'élève voyait son énergie revenir à 3 ou 10 lors des rafraîchissements ou du passage à la révision ciblée.
+    - *Corrections apportées* :
+      1. `submitQuizAnswer` appelle désormais directement la RPC `consume_energy` pour décrémenter atomiquement `user_energy.current_energy` et `user_progress.energy_balance`.
+      2. Remplacement systématique de tous les fallbacks fallacieux (`?? 10`) par `?? 0` dans `QuizView.tsx`, `QuizPlayerModal.tsx`, `AppShell.tsx`, `DiamondsView.tsx`, `ProfileView.tsx`.
+      3. Rafraîchissement synchrone de `user_progress` et `user_economy` dès qu'une erreur de quiz est enregistrée.
+      4. Maintien intact de la remédiation pédagogique (proposer de revoir la notion faible) sans AUCUN crédit d'énergie gratuit.
+      5. Seules recharges valides dans REVIZO : réinitialisation quotidienne (3 ⚡) OU conversion de diamants (5 💎 = 1 ⚡ via `convert_diamonds_to_energy`).
+  - **Tâche 5 — Système de Parrainage Complet à Deux Paliers par Code** :
+    - *Règles métier implémentées* :
+      1. Chaque élève possède un code de parrainage unique (`referral_code` format `REV-XXXXXX`) visible et partageable depuis son profil (`ReferralView.tsx`).
+      2. **Palier 1 (Inscription)** : Quand le nouvel utilisateur B s'inscrit avec le code de A :
+         - A reçoit immédiatement **+5 diamants**.
+         - B reçoit immédiatement **+5 diamants**.
+         - Crédité une seule et unique fois par code utilisé, au moment de l'inscription.
+      3. **Palier 2 (Premier abonnement payant)** : Quand B souscrit son premier forfait (Essentiel, Intensif ou Premium) :
+         - A reçoit immédiatement un bonus supplémentaire de **+10 diamants**.
+         - B reçoit ses diamants d'inscription réguliers liés au forfait choisi (10, 30 ou 60 💎).
+      4. **Anti-fraude absolue** :
+         - Auto-parrainage formellement interdit (`referrer_id = referee_id` rejeté).
+         - Un même compte filleul B ne peut utiliser qu'un seul code, une seule fois à vie (`referred_by_user_id IS NOT NULL` rejeté).
+      5. **Interface utilisateur** :
+         - Champ *"Code d'invitation d'un ami (facultatif)"* intégré dans le formulaire d'inscription (`AuthView.tsx`).
+         - Vue dédiée *"Inviter un ami"* (`ReferralView.tsx`) détaillant les deux paliers (5 💎 à l'inscription + 10 💎 au 1er abonnement) avec bouton de partage natif/copie de lien.
+    - *Architecture Backend & Base de données* :
+      - Migration SQL `20260909000010_revizo_referral_signup_bonus.sql` déployée sur Supabase.
+      - Fonction PostgreSQL `apply_referral_code` sécurisée avec transactions atomiques et idempotence (`claim_reward`).
+      - Déclencheur automatique de parrainage intégré dans `SupabaseAuthProvider.signUp` et `MockDataProvider.applyReferralCode`.
+  - **Validation & Non-Régression** :
+    - Test réel de bout en bout exécuté sur le projet Supabase de production avec de vrais comptes :
+      - Création Parrain A (`REV-L4TAPN`, 10 💎 initiaux).
+      - Inscription Filleul B avec code A -> Palier 1 validé : A = 15 💎 (+5 💎), B = 15 💎 (+5 💎).
+      - Tentative d'auto-parrainage / réutilisation -> Rejetée proprement.
+      - Abonnement Essentiel activé par B -> Palier 2 validé : A = 25 💎 (+10 💎).
+      - Erreur quiz provoquée -> Énergie décrémentée de 3 à 2 ⚡.
+      - Consultation de la notion faible -> Énergie reste strictement à 2 ⚡ (zéro fuite).
+      - Achat de recharge (5 💎 = 1 ⚡) -> Énergie restaurée à 3 ⚡, solde diamant débité à 20 💎.
+    - 23 suites de tests Vitest exécutées : 165 tests passés sur 165 (100% de succès).
+    - Build de production `tsc -b && vite build` validé avec succès en 8.59s.
+
 ---
 
 ## 🔒 RÈGLE IMPÉRATIVE DE SÉCURITÉ : GESTION DES SECRETS & CLÉS D'API

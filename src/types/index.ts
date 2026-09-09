@@ -26,6 +26,7 @@ export interface SignUpData {
   password: string;
   displayName: string;
   gradeLevel: SchoolLevel;
+  referralCode?: string;
 }
 
 export interface UserProgress {
@@ -400,10 +401,13 @@ export interface PlanDetails {
   name: string;
   priceFcfa: number;
   dailyRevisionLimit: number;
-  maxEnergy: number;
-  initialDiamonds: number;
+  maxEnergy?: number;
+  initialDiamonds?: number;
   badge?: string;
   isPopular?: boolean;
+  period?: string;
+  desc?: string;
+  btnText?: string;
   features: string[];
 }
 
@@ -505,70 +509,6 @@ export interface RevisionUsageResult {
   trialExhausted?: boolean;
 }
 
-export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanDetails> = {
-  free: {
-    id: 'free',
-    name: 'Essai Gratuit',
-    priceFcfa: 0,
-    dailyRevisionLimit: 1,
-    maxEnergy: 3,
-    initialDiamonds: 10,
-    features: [
-      '1 cours d\'essai gratuit à vie',
-      '3 énergies ⚡ max',
-      'Accès aux quiz essentiels',
-      'Téléchargement PDF des fiches'
-    ]
-  },
-  essentiel: {
-    id: 'essentiel',
-    name: 'Essentiel',
-    priceFcfa: 1000,
-    dailyRevisionLimit: 4,
-    maxEnergy: 10,
-    initialDiamonds: 10,
-    features: [
-      '4 révisions intelligentes par jour',
-      '10 énergies ⚡ max',
-      '10 diamants 💎 de bienvenue',
-      'Génération complète de quiz & exercices',
-      'Accès prioritaire à l\'analyse Gemini'
-    ]
-  },
-  intensif: {
-    id: 'intensif',
-    name: 'Pro',
-    priceFcfa: 3000,
-    dailyRevisionLimit: 10,
-    maxEnergy: 20,
-    initialDiamonds: 30,
-    isPopular: true,
-    badge: 'Le plus populaire',
-    features: [
-      '10 révisions intelligentes par jour',
-      '20 énergies ⚡ max',
-      '30 diamants 💎 de bienvenue',
-      'Idéal pour préparer les examens et brevets',
-      'Quiz de révision espacée illimités',
-      'Support prioritaire'
-    ]
-  },
-  premium: {
-    id: 'premium',
-    name: 'Premium',
-    priceFcfa: 5000,
-    dailyRevisionLimit: 18,
-    maxEnergy: 30,
-    initialDiamonds: 60,
-    badge: 'Expérience complète',
-    features: [
-      '18 révisions intelligentes par jour',
-      '30 énergies ⚡ max',
-      '60 diamants 💎 de bienvenue',
-      'L\'expérience d\'apprentissage ultime',
-      'Toutes les matières sans compromis',
-      'Analyses documentaires approfondies'
-    ]
-  }
-};
+export { SUBSCRIPTION_PLANS, ORDERED_PLANS } from '../config/subscriptionPlans';
+
 

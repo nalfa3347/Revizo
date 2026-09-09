@@ -297,7 +297,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {progress.diamondsBalance} 💎
               </div>
               <div className="profile-stat-subtext">
-                {economy?.energy.currentEnergy ?? 10} ⚡ / {economy?.energy.maxEnergy ?? 10} ⚡ disponibles
+                {economy?.energy.currentEnergy ?? progress?.energyBalance ?? 0} ⚡ / {economy?.energy.maxEnergy ?? 3} ⚡ disponibles
               </div>
             </div>
 
@@ -436,7 +436,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="profile-menu-texts">
                 <span className="profile-menu-label">Mes Diamants & Énergie</span>
                 <span className="profile-menu-caption">
-                  {economy?.diamonds.balance ?? progress?.diamondsBalance ?? 0} 💎 • {economy?.energy.currentEnergy ?? progress?.energyBalance ?? 10} ⚡ disponibles
+                  {economy?.diamonds.balance ?? progress?.diamondsBalance ?? 0} 💎 • {economy?.energy.currentEnergy ?? progress?.energyBalance ?? 0} ⚡ disponibles
                 </span>
               </div>
             </div>
@@ -456,7 +456,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="profile-menu-texts">
                 <span className="profile-menu-label">Inviter mes amis (Parrainage)</span>
                 <span className="profile-menu-caption">
-                  Code {economy?.referral.referralCode || 'REV-REVIZO'} • Gagne +10 💎 par ami
+                  Code {economy?.referral.referralCode || 'REV-REVIZO'} • +5 💎 à l'inscription & +10 💎 à l'abonnement
                 </span>
               </div>
             </div>

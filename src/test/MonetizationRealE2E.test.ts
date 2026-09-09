@@ -178,9 +178,9 @@ describe('REVIZO — Test E2E Réel Supabase (Parcours Utilisateur A & B)', () =
 
     // Si B avait déjà un parrain dans un test précédent, applyRes peut être false
     if (applyRes.success) {
-      // Vérifier que A n'a PAS reçu de diamants à la simple inscription
+      // Vérifier que A reçoit immédiatement +5 💎 dès l'inscription de B
       const diamondsAAfterRegister = (await economyServiceA.getEconomyState()).diamonds.balance;
-      expect(diamondsAAfterRegister).toBe(diamondsABefore);
+      expect(diamondsAAfterRegister).toBe(diamondsABefore + 5);
     }
   }, 30000);
 

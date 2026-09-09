@@ -98,13 +98,13 @@ describe('REVIZO — Tests Unitaires & Intégrité de la Landing Page', () => {
     expect(html).not.toContain('avis');
   });
 
-  it('affiche les 4 formules tarifaires officielles en FCFA (Découverte, Essentiel, Intensif, Premium)', () => {
+  it('affiche les 4 formules tarifaires officielles en FCFA (Essai Gratuit, Essentiel, Intensif, Premium)', () => {
     const handleAuth = vi.fn();
     const html = renderToString(
       React.createElement(LandingPricing, { onOpenAuth: handleAuth })
     );
 
-    expect(html).toContain('Découverte');
+    expect(html).toContain('Essai Gratuit');
     expect(html).toContain('Essentiel');
     expect(html).toContain('Intensif');
     expect(html).toContain('Premium');
@@ -113,6 +113,8 @@ describe('REVIZO — Tests Unitaires & Intégrité de la Landing Page', () => {
     expect(html).toContain('3 000');
     expect(html).toContain('5 000');
     expect(html).toContain('FCFA / mois');
+    expect(html).not.toContain('bancaire');
+    expect(html).not.toContain('Carte');
   });
 
   it('affiche les questions fréquentes dans la section FAQ', () => {

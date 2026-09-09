@@ -25,7 +25,7 @@ export const ReferralView: React.FC<ReferralViewProps> = ({ onBack }) => {
   const referralCode = economy?.referral.referralCode || 'REV-REVIZO';
   const referralsCount = economy?.referral.totalReferrals ?? economy?.referral.referralsCount ?? 0;
   const rewardsEarnedCount = economy?.referral.rewardedReferrals ?? economy?.referral.rewardsEarnedCount ?? 0;
-  const totalDiamondsEarned = rewardsEarnedCount * 10;
+  const totalDiamondsEarned = referralsCount * 5 + rewardsEarnedCount * 10;
   const hasReferrer = !!economy?.referral.referredByUserId;
 
   const handleCopyCode = async () => {
@@ -74,7 +74,7 @@ export const ReferralView: React.FC<ReferralViewProps> = ({ onBack }) => {
       if (res.success) {
         setFeedback({
           type: 'success',
-          message: 'Code de parrainage validé ! Ton parrain sera récompensé lors de ton premier abonnement.'
+          message: res.message || 'Code de parrainage validé ! Vous avez reçu +5 💎 chacun.'
         });
         setInputCode('');
         await refreshEconomy();
@@ -175,8 +175,8 @@ export const ReferralView: React.FC<ReferralViewProps> = ({ onBack }) => {
           Gagne des diamants en invitant tes camarades !
         </h2>
 
-        <p style={{ fontSize: '0.9rem', color: '#4B5563', maxWidth: '480px', margin: '0 auto 24px auto', lineHeight: 1.5 }}>
-          Invite un ami sur REVIZO. Lorsqu’il prend son premier abonnement payant, tu reçois automatiquement <strong>+10 💎</strong>.
+        <p style={{ fontSize: '0.9rem', color: '#4B5563', maxWidth: '520px', margin: '0 auto 24px auto', lineHeight: 1.5 }}>
+          Invite un ami sur REVIZO : vous recevez immédiatement <strong>+5 💎 chacun</strong> dès son inscription. Puis, lorsqu’il souscrit à son premier abonnement payant, tu reçois un bonus de <strong>+10 💎</strong> supplémentaires !
         </p>
 
         {/* Bloc du code unique */}
@@ -287,7 +287,7 @@ export const ReferralView: React.FC<ReferralViewProps> = ({ onBack }) => {
             +{totalDiamondsEarned} 💎
           </div>
           <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
-            {rewardsEarnedCount} abonnement(s) payant(s) récompensé(s)
+            {referralsCount} ami(s) inscrit(s) • {rewardsEarnedCount} abonné(s) payant(s)
           </div>
         </div>
       </div>
@@ -371,7 +371,7 @@ export const ReferralView: React.FC<ReferralViewProps> = ({ onBack }) => {
             Règles de sécurité & intégrité
           </div>
           <div style={{ fontSize: '0.8rem', color: '#6B7280', lineHeight: 1.45 }}>
-            Chaque compte ne peut avoir qu’un seul parrain. Le bonus de 10 💎 est automatiquement et définitivement attribué dès confirmation du premier abonnement payant (Essentiel, Intensif ou Premium) du filleul.
+            Chaque compte ne peut utiliser qu’un seul code de parrainage, une seule fois à vie. L'auto-parrainage est strictement interdit. Le bonus de +5 💎 est attribué immédiatement à l'inscription pour les deux comptes, et le bonus de +10 💎 supplémentaires est automatiquement crédité dès confirmation du premier abonnement payant (Essentiel, Intensif ou Premium) du filleul.
           </div>
         </div>
       </div>
